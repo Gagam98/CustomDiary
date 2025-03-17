@@ -1,5 +1,5 @@
-import { useEffect, useRef, CSSProperties } from "react";
-import { Engine, Render, World, Bodies, Body, Runner } from "matter-js";
+import { useEffect, useRef } from "react";
+import { Engine, Render, World, Bodies, Body } from "matter-js";
 
 interface StickerPhysicsProps {
   shapes: Array<{
@@ -15,23 +15,17 @@ interface StickerPhysicsProps {
 const StickerPhysics: React.FC<StickerPhysicsProps> = ({ shapes }) => {
   const canvasRef = useRef<HTMLDivElement>(null);
   const engineRef = useRef<Matter.Engine | null>(null);
-  const runnerRef = useRef<Matter.Runner | null>(null);
   const renderRef = useRef<Matter.Render | null>(null);
   const bodiesRef = useRef<{ [key: string]: Body }>({});
 
   useEffect(() => {
     if (!canvasRef.current) return;
 
-    // 🛠 물리 엔진 생성 및 중력 적용
-    const engine = Engine.create({ gravity: { x: 0, y: 1 } });
+    const engine = Engine.create({
+      gravity: { x: 0, y: 1.5 }, // 중력 값 증가
+    });
     engineRef.current = engine;
 
-    // 🛠 Runner 생성 및 실행
-    const runner = Runner.create();
-    runnerRef.current = runner;
-    Runner.run(runner, engine);
-
-    // 🛠 Matter.js 렌더러 생성
     const render = Render.create({
       element: canvasRef.current,
       engine: engine,
@@ -41,25 +35,56 @@ const StickerPhysics: React.FC<StickerPhysicsProps> = ({ shapes }) => {
         wireframes: false,
         background: "transparent",
       },
-    });
+    }) as Matter.Render & { options: Required<Matter.IRendererOptions> };
     renderRef.current = render;
+
+    const wallOptions = { isStatic: true, render: { visible: false } };
+    const thickness = 50;
+
+    const ground = Bodies.rectangle(
+      render.options.width / 2,
+      render.options.height + thickness / 2,
+      render.options.width + thickness * 2,
+      thickness,
+      wallOptions
+    );
+
+    const leftWall = Bodies.rectangle(
+      -thickness / 2,
+      render.options.height / 2,
+      thickness,
+      render.options.height + thickness * 2,
+      wallOptions
+    );
+
+    const rightWall = Bodies.rectangle(
+      render.options.width + thickness / 2,
+      render.options.height / 2,
+      thickness,
+      render.options.height + thickness * 2,
+      wallOptions
+    );
+
+    World.add(engine.world, [ground, leftWall, rightWall]);
+
+    Engine.run(engine);
     Render.run(render);
 
-    // 🛠 바닥 추가 (Canvas 최하단에 위치)
-    const ground = Bodies.rectangle(
-      canvasRef.current.clientWidth / 2,
-      canvasRef.current.clientHeight, // ✅ 바닥 위치를 정확하게 조정
-      canvasRef.current.clientWidth,
-      10, // 바닥 두께를 줄여 자연스럽게 충돌하도록 조정
-      { isStatic: true }
-    );
-    World.add(engine.world, [ground]);
+    const handleResize = () => {
+      if (renderRef.current && canvasRef.current) {
+        renderRef.current.options.width = canvasRef.current.clientWidth;
+        renderRef.current.options.height = canvasRef.current.clientHeight;
+        Render.setPixelRatio(renderRef.current, window.devicePixelRatio);
+      }
+    };
 
+    window.addEventListener("resize", handleResize);
     return () => {
       Render.stop(render);
-      World.clear(engine.world, false);
       Engine.clear(engine);
-      Runner.stop(runner);
+      window.removeEventListener("resize", handleResize);
+      if (render.canvas) render.canvas.remove();
+      if (render.textures) render.textures = {};
     };
   }, []);
 
@@ -68,29 +93,68 @@ const StickerPhysics: React.FC<StickerPhysicsProps> = ({ shapes }) => {
     const engine = engineRef.current;
 
     shapes.forEach((shape) => {
-      if (bodiesRef.current[shape.id]) {
-        // 🛠 기존 스티커가 있으면 제거 후 재추가
-        World.remove(engine.world, bodiesRef.current[shape.id]);
+      if (!bodiesRef.current[shape.id]) {
+        let body;
+        const options = {
+          restitution: 0.7,
+          friction: 0.02,
+          render: {
+            fillStyle: shape.color,
+            strokeStyle: "black",
+            lineWidth: 1,
+          },
+        };
+
+        switch (shape.shape) {
+          case "circle":
+            body = Bodies.circle(shape.x, shape.y, shape.size / 2, options);
+            break;
+          case "square":
+            body = Bodies.rectangle(
+              shape.x,
+              shape.y,
+              shape.size,
+              shape.size,
+              options
+            );
+            break;
+          case "triangle":
+            body = Bodies.polygon(shape.x, shape.y, 3, shape.size / 2, options);
+            break;
+          case "heart":
+            body = Bodies.circle(shape.x, shape.y, shape.size / 2, options);
+            break;
+          case "star":
+            body = Bodies.polygon(shape.x, shape.y, 5, shape.size / 2, options);
+            break;
+          default:
+            body = Bodies.circle(shape.x, shape.y, shape.size / 2, options);
+        }
+
+        Body.setAngle(body, Math.random() * Math.PI * 2);
+        Body.setVelocity(body, { x: 0, y: 3 }); // 초기에 아래로 떨어지는 속도 부여
+        Body.applyForce(body, body.position, {
+          x: (Math.random() - 0.5) * 0.005,
+          y: 0.1, // 더 강한 아래 방향 힘 적용
+        });
+
+        bodiesRef.current[shape.id] = body;
+        World.add(engine.world, body);
       }
+    });
 
-      // 🛠 중력 적용된 스티커 생성
-      const body = Bodies.circle(shape.x, shape.y, shape.size / 2, {
-        restitution: 0.8,
-        friction: 0.2,
-      });
-
-      World.add(engine.world, body);
-      bodiesRef.current[shape.id] = body;
+    const currentIds = shapes.map((s) => s.id);
+    Object.keys(bodiesRef.current).forEach((id) => {
+      if (!currentIds.includes(id)) {
+        World.remove(engine.world, bodiesRef.current[id]);
+        delete bodiesRef.current[id];
+      }
     });
   }, [shapes]);
 
-  const style: CSSProperties = {
-    width: "100%",
-    height: "100%",
-    position: "absolute",
-  };
-
-  return <div ref={canvasRef} style={style} />;
+  return (
+    <div ref={canvasRef} className="absolute inset-0 pointer-events-none"></div>
+  );
 };
 
 export default StickerPhysics;

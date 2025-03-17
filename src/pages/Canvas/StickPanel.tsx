@@ -1,47 +1,47 @@
-import { FiPenTool, FiSquare } from "react-icons/fi";
+import { FiScissors, FiTool, FiType } from "react-icons/fi";
 
 interface StickPanelProps {
-  activeTool: string;
-  handleToolClick: (tool: string) => void;
+  activeStickTool: string;
+  setActiveStickTool: (tool: string) => void;
 }
 
 const StickPanel: React.FC<StickPanelProps> = ({
-  activeTool,
-  handleToolClick,
+  activeStickTool,
+  setActiveStickTool,
 }) => {
   return (
     <div className="bg-white w-16 shadow-md border-r border-gray-200 flex flex-col items-center py-4 z-10">
       <div
         className={`w-12 h-12 mb-4 flex items-center justify-center rounded-full cursor-pointer transition-all ${
-          activeTool === "pen"
+          activeStickTool === "glue"
             ? "bg-gray-200 shadow-md transform translate-x-1"
             : "hover:bg-gray-100"
         }`}
-        onClick={() => handleToolClick("pen")}
+        onClick={() => setActiveStickTool("glue")}
       >
-        <div className="w-8 h-8 rounded-full bg-black" />
+        <FiTool size={22} />
       </div>
 
       <div
-        className={`w-12 h-12 mb-4 flex items-center justify-center rounded cursor-pointer transition-all ${
-          activeTool === "eraser"
+        className={`w-12 h-12 mb-4 flex items-center justify-center rounded-full cursor-pointer transition-all ${
+          activeStickTool === "scissors"
             ? "bg-gray-200 shadow-md transform translate-x-1"
             : "hover:bg-gray-100"
         }`}
-        onClick={() => handleToolClick("eraser")}
+        onClick={() => setActiveStickTool("scissors")}
       >
-        <FiSquare size={22} />
+        <FiScissors size={22} />
       </div>
 
       <div
-        className={`w-12 h-12 mb-4 flex items-center justify-center rounded cursor-pointer transition-all ${
-          activeTool === "brush"
+        className={`w-12 h-12 mb-4 flex items-center justify-center rounded-full cursor-pointer transition-all ${
+          activeStickTool === "tape"
             ? "bg-gray-200 shadow-md transform translate-x-1"
             : "hover:bg-gray-100"
         }`}
-        onClick={() => handleToolClick("brush")}
+        onClick={() => setActiveStickTool("tape")}
       >
-        <FiPenTool size={22} />
+        <FiType size={22} />
       </div>
     </div>
   );
