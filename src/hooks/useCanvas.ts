@@ -1,7 +1,7 @@
 import { useContext } from "react";
-import { CanvasContext } from "../contexts/canvas";
+import { CanvasContext, CanvasContextType } from "../contexts/CanvasContext";
 
-export const useCanvas = () => {
+export const useCanvas = (): CanvasContextType => {
   const context = useContext(CanvasContext);
   if (!context) {
     throw new Error("useCanvas must be used within a CanvasProvider");

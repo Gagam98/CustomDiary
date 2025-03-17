@@ -1,9 +1,9 @@
-import type { FC, ChangeEvent } from "react";
-import { FiChevronLeft, FiBookmark } from "react-icons/fi";
+import { FC, ChangeEvent } from "react";
 import { useCanvas } from "./CanvasContext";
 import PenTool from "./PenTool";
 import EraserTool from "./EraserTool";
 import StickerTool from "./Sticker";
+import { FiMinus } from "react-icons/fi";
 
 const TopToolbar: FC = () => {
   const {
@@ -17,30 +17,31 @@ const TopToolbar: FC = () => {
     setActiveTool,
   } = useCanvas();
 
-  const colorOptions = [
-    "#000000",
-    "#FF0000",
-    "#00FF00",
-    "#0000FF",
-    "#FFFF00",
-    "#FF00FF",
-    "#00FFFF",
-  ];
+  const colorOptions = ["#FF0000", "#000000", "#0000FF"];
 
   return (
-    <>
-      {/* 상단 헤더 */}
-      <div className="w-full h-12 bg-gray-600 flex items-center px-4 text-white">
-        <FiChevronLeft size={24} />
-        <span className="ml-4 text-lg font-semibold">캔버스 작업</span>
-        <FiBookmark className="ml-auto" size={24} />
+    <div className="w-full h-14 bg-white flex items-center px-4 border-b border-gray-300">
+      {/* 왼쪽 - 도구 선택 (펜, 지우개, 스티커) */}
+      <div className="flex items-center space-x-3">
+        <PenTool activeTool={activeTool} setActiveTool={setActiveTool} />
+        <EraserTool
+          activeTool={activeTool}
+          setActiveTool={setActiveTool}
+          eraserSize={eraserSize}
+        />
+        <StickerTool activeTool={activeTool} setActiveTool={setActiveTool} />
       </div>
 
-      {/* 툴바 (색상, 선 굵기, 지우개, 도구 선택) */}
-      <div className="w-full h-16 bg-gray-200 flex items-center justify-center border-b border-gray-300">
-        <div className="flex items-center max-w-4xl w-full justify-between">
-          {/* 색상 선택 */}
-          <div className="flex items-center space-x-2">
+      {/* 중앙 구분선 */}
+      <div className="flex-grow flex justify-center">
+        <FiMinus size={20} className="text-gray-400" />
+      </div>
+
+      {/* 오른쪽 - 색상 선택 및 크기 조절 */}
+      <div className="flex items-center space-x-4">
+        {/* 색상 선택 */}
+        {activeTool === "pen" && (
+          <div className="flex space-x-2">
             {colorOptions.map((color) => (
               <div
                 key={color}
@@ -54,10 +55,11 @@ const TopToolbar: FC = () => {
               />
             ))}
           </div>
+        )}
 
-          {/* 선 굵기 조절 */}
-          <div className="flex items-center">
-            <span className="mr-2 text-sm">Line Width:</span>
+        {/* 선 굵기 조절 */}
+        {activeTool === "pen" && (
+          <div className="flex items-center space-x-2">
             <input
               type="range"
               min="1"
@@ -66,14 +68,15 @@ const TopToolbar: FC = () => {
               onChange={(e: ChangeEvent<HTMLInputElement>) =>
                 setLineWidth(parseInt(e.target.value))
               }
-              className="w-32"
+              className="w-20"
             />
-            <span className="ml-2 text-sm">{lineWidth}px</span>
+            <span className="text-sm">{lineWidth}px</span>
           </div>
+        )}
 
-          {/* 지우개 크기 조절 */}
-          <div className="flex items-center">
-            <span className="mr-2 text-sm">Eraser Size:</span>
+        {/* 지우개 크기 조절 */}
+        {activeTool === "eraser" && (
+          <div className="flex items-center space-x-2">
             <input
               type="range"
               min="5"
@@ -82,33 +85,13 @@ const TopToolbar: FC = () => {
               onChange={(e: ChangeEvent<HTMLInputElement>) =>
                 setEraserSize(parseInt(e.target.value))
               }
-              className="w-32"
+              className="w-20"
             />
-            <span className="ml-2 text-sm">{eraserSize}px</span>
+            <span className="text-sm">{eraserSize}px</span>
           </div>
-
-          {/* 도구 선택 */}
-          <div className="flex items-center space-x-4">
-            <PenTool
-              activeTool={activeTool}
-              activeColor={activeColor}
-              setActiveTool={setActiveTool}
-              setActiveColor={setActiveColor}
-            />
-            <EraserTool
-              activeTool={activeTool}
-              eraserSize={eraserSize}
-              setActiveTool={setActiveTool}
-              setEraserSize={setEraserSize}
-            />
-            <StickerTool
-              activeTool={activeTool}
-              setActiveTool={setActiveTool}
-            />
-          </div>
-        </div>
+        )}
       </div>
-    </>
+    </div>
   );
 };
 

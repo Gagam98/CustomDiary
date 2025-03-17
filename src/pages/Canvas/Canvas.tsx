@@ -1,12 +1,25 @@
-import type { FC } from "react";
-import { CanvasProvider } from "./CanvasContext";
+import { type FC } from "react";
+import { useEffect } from "react";
+import { CanvasProvider, useCanvas } from "./CanvasContext";
 import TopToolbar from "./TopToolbar";
 import StickPanel from "./StickPanel";
 import StickerPhysics from "../../hooks/StickerPhysics";
-import { useCanvas } from "./CanvasContext";
 
 const CanvasContent: FC = () => {
-  const { activeStickTool, canvasRef, setActiveStickTool } = useCanvas();
+  const { activeStickTool, canvasRef, setActiveStickTool, handleUndo } =
+    useCanvas();
+
+  // CMD + Z 또는 CTRL + Z 이벤트 리스너 추가
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if ((event.ctrlKey || event.metaKey) && event.key === "z") {
+        handleUndo();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [handleUndo]);
 
   return (
     <div className="flex flex-col h-screen bg-gray-100">

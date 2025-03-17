@@ -9,7 +9,13 @@ import {
 } from "react";
 
 // 사용할 툴의 타입 정의
-type ToolType = "pen" | "eraser" | "square" | "circle" | "image" | "text";
+export type ToolType =
+  | "pen"
+  | "eraser"
+  | "square"
+  | "circle"
+  | "image"
+  | "text";
 
 // CanvasContext 타입 정의
 interface CanvasContextType {
@@ -19,11 +25,15 @@ interface CanvasContextType {
   lineWidth: number;
   eraserSize: number;
   canvasRef: MutableRefObject<HTMLCanvasElement | null>;
+  history: ImageData[];
+  setHistory: (history: ImageData[]) => void;
   setActiveTool: (tool: ToolType) => void;
   setActiveStickTool: (tool: string) => void;
   setActiveColor: (color: string) => void;
   setLineWidth: (width: number) => void;
   setEraserSize: (size: number) => void;
+  saveCanvasState: () => void;
+  handleUndo: () => void;
 }
 
 // Context 생성 (초기 상태는 undefined)
@@ -51,27 +61,61 @@ export const CanvasProvider: FC<CanvasProviderProps> = ({ children }) => {
   const [activeColor, setActiveColor] = useState<string>("#000000");
   const [lineWidth, setLineWidth] = useState<number>(5);
   const [eraserSize, setEraserSize] = useState<number>(10);
-
-  // 캔버스 참조 (MutableRefObject로 명확하게 지정)
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const [history, setHistory] = useState<ImageData[]>([]);
 
-  // Context 값 설정
-  const value: CanvasContextType = {
-    activeTool,
-    activeStickTool,
-    activeColor,
-    lineWidth,
-    eraserSize,
-    canvasRef,
-    setActiveTool,
-    setActiveStickTool,
-    setActiveColor,
-    setLineWidth,
-    setEraserSize,
+  // 캔버스 상태 저장
+  const saveCanvasState = () => {
+    if (!canvasRef.current || !canvasRef.current.getContext) return;
+    const ctx = canvasRef.current.getContext("2d");
+    if (!ctx) return;
+
+    const imageData = ctx.getImageData(
+      0,
+      0,
+      canvasRef.current.width,
+      canvasRef.current.height
+    );
+    setHistory([...history, imageData]);
+  };
+
+  // CMD + Z 또는 CTRL + Z 입력 시 Undo 실행
+  const handleUndo = () => {
+    if (!canvasRef.current || history.length === 0) return;
+
+    const ctx = canvasRef.current.getContext("2d");
+    if (!ctx) return;
+
+    const prevState = history.pop();
+    setHistory([...history]);
+
+    if (prevState) {
+      ctx.putImageData(prevState, 0, 0);
+    }
   };
 
   return (
-    <CanvasContext.Provider value={value}>{children}</CanvasContext.Provider>
+    <CanvasContext.Provider
+      value={{
+        activeTool,
+        activeStickTool,
+        activeColor,
+        lineWidth,
+        eraserSize,
+        canvasRef,
+        history,
+        setHistory,
+        setActiveTool,
+        setActiveStickTool,
+        setActiveColor,
+        setLineWidth,
+        setEraserSize,
+        saveCanvasState,
+        handleUndo,
+      }}
+    >
+      {children}
+    </CanvasContext.Provider>
   );
 };
 
