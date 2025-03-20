@@ -1,18 +1,12 @@
 import { useEffect, useRef } from "react";
 import { Engine, Render, World, Bodies, Body } from "matter-js";
+import { FC } from "react";
 
 interface StickerPhysicsProps {
-  shapes: Array<{
-    id: string;
-    shape: string;
-    x: number;
-    y: number;
-    size: number;
-    color: string;
-  }>;
+  shapes: any[];
 }
 
-const StickerPhysics: React.FC<StickerPhysicsProps> = ({ shapes }) => {
+const StickerPhysics: FC<StickerPhysicsProps> = ({ shapes }) => {
   const canvasRef = useRef<HTMLDivElement>(null);
   const engineRef = useRef<Matter.Engine | null>(null);
   const renderRef = useRef<Matter.Render | null>(null);

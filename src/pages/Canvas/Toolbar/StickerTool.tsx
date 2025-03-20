@@ -3,8 +3,10 @@ import { FiStar } from "react-icons/fi";
 import { BsCircle, BsSquare, BsTriangle, BsHeart } from "react-icons/bs";
 
 interface StickerToolProps {
-  activeTool: string;
-  setActiveTool: (tool: string) => void;
+  activeTool: "pen" | "eraser" | "sticker" | "image" | "text";
+  setActiveTool: (
+    tool: "pen" | "eraser" | "sticker" | "image" | "text"
+  ) => void;
   setStickers: React.Dispatch<
     React.SetStateAction<
       Array<{
@@ -17,12 +19,14 @@ interface StickerToolProps {
       }>
     >
   >;
+  canvasRef: React.RefObject<HTMLCanvasElement>;
 }
 
 const StickerTool: React.FC<StickerToolProps> = ({
   activeTool,
   setActiveTool,
   setStickers,
+  canvasRef,
 }) => {
   const [showStickerPicker, setShowStickerPicker] = useState(false);
 
@@ -32,16 +36,14 @@ const StickerTool: React.FC<StickerToolProps> = ({
   };
 
   const selectSticker = (shape: string) => {
-    if (!document.querySelector("canvas")) return;
+    if (!canvasRef.current) return;
 
-    const canvas = document.querySelector("canvas");
-    const rect = canvas!.getBoundingClientRect();
-
+    const rect = canvasRef.current.getBoundingClientRect();
     const newSticker = {
       id: `sticker-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
       shape,
       x: Math.random() * (rect.width * 0.8) + rect.width * 0.1,
-      y: 0,
+      y: Math.random() * (rect.height * 0.8) + rect.height * 0.1, // 캔버스 안에서 위치 설정
       size: Math.random() * 20 + 40,
       color: getRandomColor(),
     };
@@ -60,6 +62,8 @@ const StickerTool: React.FC<StickerToolProps> = ({
       "#33FFF3",
       "#FF8333",
       "#8333FF",
+      "#FF5733",
+      "#57FF33",
     ];
     return colors[Math.floor(Math.random() * colors.length)];
   };
@@ -85,9 +89,9 @@ const StickerTool: React.FC<StickerToolProps> = ({
       </button>
 
       {showStickerPicker && (
-        <div className="absolute top-12 left-0 bg-white shadow-lg rounded-md p-3 z-10 sticker-picker-popup">
+        <div className="absolute top-12 left-0 bg-white shadow-lg rounded-md p-3 z-20 sticker-picker-popup">
           <div className="text-center mb-2 text-gray-700 font-medium">
-            스티커 모양
+            스티커 모양 선택
           </div>
           <div className="grid grid-cols-3 gap-3">
             {stickersList.map((sticker, index) => (

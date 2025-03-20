@@ -1,27 +1,60 @@
 import { FC, useRef, useEffect, useCallback } from "react";
-import { Eraser } from "lucide-react";
-import { useCanvas } from "./CanvasContext";
 
-const EraserTool: FC = () => {
-  const { activeTool, eraserSize, canvasRef, setActiveTool, saveCanvasState } =
-    useCanvas();
+interface PenToolProps {
+  activeTool: string;
+  activeColor: string;
+  lineWidth: number;
+  canvasRef: React.RefObject<HTMLCanvasElement>;
+  history: ImageData[];
+  setHistory: (history: ImageData[]) => void;
+}
+
+const PenTool: FC<PenToolProps> = ({
+  activeTool,
+  activeColor,
+  lineWidth,
+  canvasRef,
+  history,
+  setHistory,
+}) => {
   const ctxRef = useRef<CanvasRenderingContext2D | null>(null);
-  const isErasing = useRef(false);
+  const isDrawing = useRef(false);
 
   useEffect(() => {
     if (canvasRef.current) {
-      ctxRef.current = canvasRef.current.getContext("2d");
-      canvasRef.current.width = canvasRef.current.offsetWidth;
-      canvasRef.current.height = canvasRef.current.offsetHeight;
+      const canvas = canvasRef.current;
+      const ctx = canvas.getContext("2d");
+      if (ctx) {
+        ctxRef.current = ctx;
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+        ctx.strokeStyle = activeColor;
+        ctx.lineWidth = lineWidth;
+      }
     }
-  }, [canvasRef]);
+  }, [canvasRef, activeColor, lineWidth]);
+
+  const saveCanvasState = useCallback(() => {
+    if (!canvasRef.current || !ctxRef.current) return;
+
+    const ctx = ctxRef.current;
+    const imageData = ctx.getImageData(
+      0,
+      0,
+      canvasRef.current.width,
+      canvasRef.current.height
+    );
+    setHistory([...history, imageData]);
+  }, [canvasRef, history, setHistory]);
 
   const getMousePosition = useCallback(
     (event: MouseEvent) => {
       if (!canvasRef.current) return { x: 0, y: 0 };
+
       const rect = canvasRef.current.getBoundingClientRect();
       const scaleX = canvasRef.current.width / rect.width;
       const scaleY = canvasRef.current.height / rect.height;
+
       return {
         x: (event.clientX - rect.left) * scaleX,
         y: (event.clientY - rect.top) * scaleY,
@@ -32,26 +65,33 @@ const EraserTool: FC = () => {
 
   const handleMouseDown = useCallback(
     (event: MouseEvent) => {
-      if (!ctxRef.current || !canvasRef.current || activeTool !== "eraser")
-        return;
+      if (!ctxRef.current || !canvasRef.current || activeTool !== "pen") return;
 
-      // 캔버스 상태 저장 (Undo 기능을 위해)
       saveCanvasState();
-
-      ctxRef.current.globalCompositeOperation = "destination-out";
-      ctxRef.current.lineWidth = eraserSize;
+      const ctx = ctxRef.current;
+      ctx.strokeStyle = activeColor;
+      ctx.lineWidth = lineWidth;
+      ctx.globalCompositeOperation = "source-over";
 
       const { x, y } = getMousePosition(event);
-      ctxRef.current.beginPath();
-      ctxRef.current.moveTo(x, y);
-      isErasing.current = true;
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      isDrawing.current = true;
     },
-    [canvasRef, activeTool, eraserSize, saveCanvasState, getMousePosition]
+    [
+      canvasRef,
+      activeTool,
+      activeColor,
+      lineWidth,
+      getMousePosition,
+      saveCanvasState,
+    ]
   );
 
   const handleMouseMove = useCallback(
     (event: MouseEvent) => {
-      if (!isErasing.current || !ctxRef.current) return;
+      if (!isDrawing.current || !ctxRef.current) return;
+
       const { x, y } = getMousePosition(event);
       ctxRef.current.lineTo(x, y);
       ctxRef.current.stroke();
@@ -62,12 +102,12 @@ const EraserTool: FC = () => {
   const handleMouseUp = useCallback(() => {
     if (!ctxRef.current) return;
     ctxRef.current.closePath();
-    isErasing.current = false;
+    isDrawing.current = false;
   }, []);
 
   useEffect(() => {
+    if (!canvasRef.current) return;
     const canvas = canvasRef.current;
-    if (!canvas) return;
 
     canvas.addEventListener("mousedown", handleMouseDown);
     canvas.addEventListener("mousemove", handleMouseMove);
@@ -82,17 +122,7 @@ const EraserTool: FC = () => {
     };
   }, [handleMouseDown, handleMouseMove, handleMouseUp, canvasRef]);
 
-  return (
-    <button
-      className="p-2 rounded w-10 h-10 flex items-center justify-center"
-      onClick={() => setActiveTool("eraser")}
-    >
-      <Eraser
-        size={24}
-        className={activeTool === "eraser" ? "text-gray-700" : "text-gray-500"}
-      />
-    </button>
-  );
+  return null; // Tool logic is now handled internally
 };
 
-export default EraserTool;
+export default PenTool;
