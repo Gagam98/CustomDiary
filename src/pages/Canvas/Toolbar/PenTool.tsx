@@ -4,7 +4,7 @@ interface PenToolProps {
   activeTool: string;
   activeColor: string;
   lineWidth: number;
-  canvasRef: React.RefObject<HTMLCanvasElement>;
+  canvasRef: React.RefObject<HTMLCanvasElement | null>;
   history: ImageData[];
   setHistory: (history: ImageData[]) => void;
 }
@@ -36,7 +36,6 @@ const PenTool: FC<PenToolProps> = ({
 
   const saveCanvasState = useCallback(() => {
     if (!canvasRef.current || !ctxRef.current) return;
-
     const ctx = ctxRef.current;
     const imageData = ctx.getImageData(
       0,
@@ -50,11 +49,9 @@ const PenTool: FC<PenToolProps> = ({
   const getMousePosition = useCallback(
     (event: MouseEvent) => {
       if (!canvasRef.current) return { x: 0, y: 0 };
-
       const rect = canvasRef.current.getBoundingClientRect();
       const scaleX = canvasRef.current.width / rect.width;
       const scaleY = canvasRef.current.height / rect.height;
-
       return {
         x: (event.clientX - rect.left) * scaleX,
         y: (event.clientY - rect.top) * scaleY,
@@ -66,13 +63,11 @@ const PenTool: FC<PenToolProps> = ({
   const handleMouseDown = useCallback(
     (event: MouseEvent) => {
       if (!ctxRef.current || !canvasRef.current || activeTool !== "pen") return;
-
       saveCanvasState();
       const ctx = ctxRef.current;
       ctx.strokeStyle = activeColor;
       ctx.lineWidth = lineWidth;
       ctx.globalCompositeOperation = "source-over";
-
       const { x, y } = getMousePosition(event);
       ctx.beginPath();
       ctx.moveTo(x, y);
@@ -91,7 +86,6 @@ const PenTool: FC<PenToolProps> = ({
   const handleMouseMove = useCallback(
     (event: MouseEvent) => {
       if (!isDrawing.current || !ctxRef.current) return;
-
       const { x, y } = getMousePosition(event);
       ctxRef.current.lineTo(x, y);
       ctxRef.current.stroke();
@@ -108,12 +102,10 @@ const PenTool: FC<PenToolProps> = ({
   useEffect(() => {
     if (!canvasRef.current) return;
     const canvas = canvasRef.current;
-
     canvas.addEventListener("mousedown", handleMouseDown);
     canvas.addEventListener("mousemove", handleMouseMove);
     canvas.addEventListener("mouseup", handleMouseUp);
     canvas.addEventListener("mouseleave", handleMouseUp);
-
     return () => {
       canvas.removeEventListener("mousedown", handleMouseDown);
       canvas.removeEventListener("mousemove", handleMouseMove);
@@ -122,7 +114,7 @@ const PenTool: FC<PenToolProps> = ({
     };
   }, [handleMouseDown, handleMouseMove, handleMouseUp, canvasRef]);
 
-  return null; // Tool logic is now handled internally
+  return null;
 };
 
 export default PenTool;

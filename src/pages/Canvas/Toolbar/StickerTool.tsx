@@ -1,12 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { FiStar } from "react-icons/fi";
 import { BsCircle, BsSquare, BsTriangle, BsHeart } from "react-icons/bs";
 
 interface StickerToolProps {
-  activeTool: "pen" | "eraser" | "sticker" | "image" | "text";
-  setActiveTool: (
-    tool: "pen" | "eraser" | "sticker" | "image" | "text"
-  ) => void;
+  activeTool: string;
+  setActiveTool: (tool: string) => void;
   setStickers: React.Dispatch<
     React.SetStateAction<
       Array<{
@@ -19,13 +17,22 @@ interface StickerToolProps {
       }>
     >
   >;
-  canvasRef: React.RefObject<HTMLCanvasElement>;
+  stickers: Array<{
+    id: string;
+    shape: string;
+    x: number;
+    y: number;
+    size: number;
+    color: string;
+  }>;
+  canvasRef: React.RefObject<HTMLCanvasElement | null>;
 }
 
 const StickerTool: React.FC<StickerToolProps> = ({
   activeTool,
   setActiveTool,
   setStickers,
+  stickers,
   canvasRef,
 }) => {
   const [showStickerPicker, setShowStickerPicker] = useState(false);
@@ -37,17 +44,15 @@ const StickerTool: React.FC<StickerToolProps> = ({
 
   const selectSticker = (shape: string) => {
     if (!canvasRef.current) return;
-
     const rect = canvasRef.current.getBoundingClientRect();
     const newSticker = {
       id: `sticker-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
       shape,
       x: Math.random() * (rect.width * 0.8) + rect.width * 0.1,
-      y: Math.random() * (rect.height * 0.8) + rect.height * 0.1, // 캔버스 안에서 위치 설정
+      y: Math.random() * (rect.height * 0.8) + rect.height * 0.1,
       size: Math.random() * 20 + 40,
       color: getRandomColor(),
     };
-
     setStickers((prev) => [...prev, newSticker]);
     setShowStickerPicker(false);
   };
@@ -62,8 +67,6 @@ const StickerTool: React.FC<StickerToolProps> = ({
       "#33FFF3",
       "#FF8333",
       "#8333FF",
-      "#FF5733",
-      "#57FF33",
     ];
     return colors[Math.floor(Math.random() * colors.length)];
   };
@@ -75,6 +78,10 @@ const StickerTool: React.FC<StickerToolProps> = ({
     { name: "heart", icon: <BsHeart size={20} /> },
     { name: "star", icon: <FiStar size={20} /> },
   ];
+
+  useEffect(() => {
+    console.log("현재 스티커 개수:", stickers.length);
+  }, [stickers]);
 
   return (
     <div className="relative">
@@ -89,7 +96,7 @@ const StickerTool: React.FC<StickerToolProps> = ({
       </button>
 
       {showStickerPicker && (
-        <div className="absolute top-12 left-0 bg-white shadow-lg rounded-md p-3 z-20 sticker-picker-popup">
+        <div className="absolute top-12 left-0 bg-white shadow-lg rounded-md p-3 z-20">
           <div className="text-center mb-2 text-gray-700 font-medium">
             스티커 모양 선택
           </div>
