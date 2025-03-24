@@ -25,10 +25,6 @@ const EraserTool: FC<EraserToolProps> = ({
     if (canvasRef.current) {
       const canvas = canvasRef.current;
       ctxRef.current = canvas.getContext("2d");
-      if (ctxRef.current) {
-        canvas.width = canvas.clientWidth;
-        canvas.height = canvas.clientHeight;
-      }
     }
   }, [canvasRef]);
 

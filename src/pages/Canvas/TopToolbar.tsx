@@ -9,14 +9,12 @@ import {
   Settings,
 } from "lucide-react";
 import { FiStar } from "react-icons/fi";
-import PenTool from "./PenTool";
-import EraserTool from "./EraserTool";
-import StickerTool from "./StickerTool";
-import SideStickbar from "../Sidebar/Index";
+import PenTool from "./tools/PenTool";
+import EraserTool from "./tools/EraserTool";
+import StickerTool from "./tools/StickerTool";
 
 const Index = () => {
   const [activeTool, setActiveTool] = useState<string>("pen");
-  const [activeSideTool, setActiveSideTool] = useState<string>("glue");
   const [activeColor, setActiveColor] = useState<string>("#000000");
   const [eraserSize, setEraserSize] = useState<number>(10);
   const [lineWidth, setLineWidth] = useState<number>(3);
@@ -134,13 +132,7 @@ const Index = () => {
         {renderToolbar()}
       </div>
 
-      {/* Main content */}
       <div className="flex flex-1 overflow-hidden">
-        <SideStickbar
-          activeSideTool={activeSideTool}
-          setActiveSideTool={setActiveSideTool}
-        />
-
         <div className="flex-1 bg-gray-50 flex justify-center items-center p-4">
           <div className="w-full h-full bg-white shadow-md">
             <canvas ref={canvasRef} className="w-full h-full" />

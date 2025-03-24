@@ -2,7 +2,7 @@ import { type FC, useEffect } from "react";
 
 interface CanvasProps {
   handleUndo: () => void;
-  canvasRef: React.RefObject<HTMLCanvasElement>;
+  canvasRef: React.RefObject<HTMLCanvasElement | null>; // ✅ null 허용으로 수정
 }
 
 const CanvasContent: FC<CanvasProps> = ({ handleUndo, canvasRef }) => {
@@ -40,7 +40,7 @@ const CanvasContent: FC<CanvasProps> = ({ handleUndo, canvasRef }) => {
     };
   }, [canvasRef]);
 
-  return null; // Canvas is now handled directly in the main component
+  return null; // 캔버스는 부모에서 직접 렌더링
 };
 
 export default CanvasContent;
