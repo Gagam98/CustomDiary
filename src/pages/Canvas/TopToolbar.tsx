@@ -1,3 +1,4 @@
+// TopToolbar.tsx
 import { useState, useRef, ChangeEvent } from "react";
 import {
   ChevronLeft,
@@ -42,68 +43,105 @@ const Index = () => {
   };
 
   const renderToolbar = () => (
-    <div className="flex items-center space-x-2">
-      <button
-        className={`p-2 rounded ${activeTool === "pen" ? "bg-blue-100" : ""}`}
-        onClick={() => setActiveTool("pen")}
-      >
-        <Pen size={20} />
-      </button>
-      <button
-        className={`p-2 rounded ${
-          activeTool === "eraser" ? "bg-blue-100" : ""
-        }`}
-        onClick={() => setActiveTool("eraser")}
-      >
-        <Eraser size={20} />
-      </button>
-      <button
-        className={`p-2 rounded ${
-          activeTool === "sticker" ? "bg-blue-100" : ""
-        }`}
-        onClick={() => setActiveTool("sticker")}
-      >
-        <FiStar size={20} />
-      </button>
-      <button
-        className={`p-2 rounded ${activeTool === "image" ? "bg-blue-100" : ""}`}
-        onClick={() => setActiveTool("image")}
-      >
-        <ImageIcon size={20} />
-      </button>
-      <button
-        className={`p-2 rounded ${activeTool === "text" ? "bg-blue-100" : ""}`}
-        onClick={() => setActiveTool("text")}
-      >
-        <Type size={20} />
-      </button>
-      <div className="h-6 w-px bg-gray-300 mx-2"></div>
-      {colorOptions.map((color) => (
-        <button
-          key={color}
-          className={`w-6 h-6 rounded-full ${
-            activeColor === color ? "ring-2 ring-gray-700" : ""
-          } ${color === "#FFFFFF" ? "border border-gray-300" : ""}`}
-          style={{ backgroundColor: color }}
-          onClick={() => setActiveColor(color)}
-        />
-      ))}
-      <div className="h-6 w-px bg-gray-300 mx-2"></div>
-      {activeTool === "pen" && (
-        <input
-          type="range"
-          min="1"
-          max="10"
-          value={lineWidth}
-          onChange={(e: ChangeEvent<HTMLInputElement>) =>
-            setLineWidth(parseInt(e.target.value))
-          }
-          className="w-20"
-        />
-      )}
-      <button className="p-2 rounded bg-gray-200" onClick={handleUndo}>
-        Undo
-      </button>
+    <div className="flex items-center w-full relative">
+      {/* Center divider line (fixed position) */}
+      <div className="absolute left-1/2 transform -translate-x-1/2 top-0 bottom-0 w-px bg-gray-300"></div>
+
+      {/* Left tools section (fixed position) */}
+      <div className="w-1/2 flex items-center justify-end pr-4">
+        <div className="flex items-center space-x-2">
+          <button
+            className={`p-2 rounded ${
+              activeTool === "pen" ? "bg-blue-100" : ""
+            }`}
+            onClick={() => setActiveTool("pen")}
+          >
+            <Pen size={20} />
+          </button>
+          <button
+            className={`p-2 rounded ${
+              activeTool === "eraser" ? "bg-blue-100" : ""
+            }`}
+            onClick={() => setActiveTool("eraser")}
+          >
+            <Eraser size={20} />
+          </button>
+          <button
+            className={`p-2 rounded ${
+              activeTool === "sticker" ? "bg-blue-100" : ""
+            }`}
+            onClick={() => setActiveTool("sticker")}
+          >
+            <FiStar size={20} />
+          </button>
+          <button
+            className={`p-2 rounded ${
+              activeTool === "image" ? "bg-blue-100" : ""
+            }`}
+            onClick={() => setActiveTool("image")}
+          >
+            <ImageIcon size={20} />
+          </button>
+          <button
+            className={`p-2 rounded ${
+              activeTool === "text" ? "bg-blue-100" : ""
+            }`}
+            onClick={() => setActiveTool("text")}
+          >
+            <Type size={20} />
+          </button>
+        </div>
+      </div>
+
+      {/* Right controls section (dynamically sized) */}
+      <div className="w-1/2 flex items-center pl-4">
+        <div className="flex items-center space-x-2 flex-grow">
+          {activeTool === "pen" && (
+            <>
+              {colorOptions.map((color) => (
+                <button
+                  key={color}
+                  className={`w-6 h-6 rounded-full ${
+                    activeColor === color ? "ring-2 ring-gray-700" : ""
+                  } ${color === "#FFFFFF" ? "border border-gray-300" : ""}`}
+                  style={{ backgroundColor: color }}
+                  onClick={() => setActiveColor(color)}
+                />
+              ))}
+              <input
+                type="range"
+                min={1}
+                max={10}
+                value={lineWidth}
+                onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                  setLineWidth(parseInt(e.target.value))
+                }
+                className="w-20"
+              />
+            </>
+          )}
+
+          {activeTool === "eraser" && (
+            <input
+              type="range"
+              min={5}
+              max={50}
+              value={eraserSize}
+              onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                setEraserSize(parseInt(e.target.value))
+              }
+              className="w-20"
+            />
+          )}
+
+          <button
+            className="p-2 rounded bg-gray-200 ml-auto"
+            onClick={handleUndo}
+          >
+            Undo
+          </button>
+        </div>
+      </div>
     </div>
   );
 
@@ -128,7 +166,7 @@ const Index = () => {
       </div>
 
       {/* Toolbar */}
-      <div className="w-full bg-white border-b border-gray-200 p-2 flex justify-center">
+      <div className="w-full bg-white border-b border-gray-200 p-2">
         {renderToolbar()}
       </div>
 
@@ -154,17 +192,13 @@ const Index = () => {
       {activeTool === "eraser" && (
         <EraserTool
           activeTool={activeTool}
-          setActiveTool={setActiveTool}
           eraserSize={eraserSize}
-          setEraserSize={setEraserSize}
           canvasRef={canvasRef}
           saveCanvasState={() => setHistory([...history])}
         />
       )}
       {activeTool === "sticker" && (
         <StickerTool
-          activeTool={activeTool}
-          setActiveTool={setActiveTool}
           setStickers={setStickers}
           stickers={stickers}
           canvasRef={canvasRef}

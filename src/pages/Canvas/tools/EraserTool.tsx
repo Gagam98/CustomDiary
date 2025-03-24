@@ -1,20 +1,15 @@
 import { FC, useRef, useEffect, useCallback } from "react";
-import { Eraser } from "lucide-react";
 
 interface EraserToolProps {
   activeTool: string;
-  setActiveTool: (tool: string) => void;
   eraserSize: number;
-  setEraserSize: React.Dispatch<React.SetStateAction<number>>;
   canvasRef: React.RefObject<HTMLCanvasElement | null>;
   saveCanvasState: () => void;
 }
 
 const EraserTool: FC<EraserToolProps> = ({
   activeTool,
-  setActiveTool,
   eraserSize,
-  setEraserSize,
   canvasRef,
   saveCanvasState,
 }) => {
@@ -22,9 +17,17 @@ const EraserTool: FC<EraserToolProps> = ({
   const isErasing = useRef(false);
 
   useEffect(() => {
-    if (canvasRef.current) {
-      const canvas = canvasRef.current;
-      ctxRef.current = canvas.getContext("2d");
+    if (!canvasRef.current) return;
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext("2d");
+
+    if (ctx) {
+      const dpr = window.devicePixelRatio || 1;
+
+      ctx.setTransform(1, 0, 0, 1, 0, 0); // transform 초기화
+      ctx.scale(dpr, dpr); // DPR 적용
+
+      ctxRef.current = ctx;
     }
   }, [canvasRef]);
 
@@ -32,11 +35,9 @@ const EraserTool: FC<EraserToolProps> = ({
     (event: MouseEvent) => {
       if (!canvasRef?.current) return { x: 0, y: 0 };
       const rect = canvasRef.current.getBoundingClientRect();
-      const scaleX = canvasRef.current.width / rect.width;
-      const scaleY = canvasRef.current.height / rect.height;
       return {
-        x: (event.clientX - rect.left) * scaleX,
-        y: (event.clientY - rect.top) * scaleY,
+        x: event.clientX - rect.left,
+        y: event.clientY - rect.top,
       };
     },
     [canvasRef]
@@ -48,9 +49,11 @@ const EraserTool: FC<EraserToolProps> = ({
         return;
       saveCanvasState();
       const ctx = ctxRef.current;
+
       ctx.globalCompositeOperation = "destination-out";
       ctx.lineWidth = eraserSize;
       ctx.lineCap = "round";
+
       const { x, y } = getMousePosition(event);
       ctx.beginPath();
       ctx.moveTo(x, y);
@@ -91,34 +94,7 @@ const EraserTool: FC<EraserToolProps> = ({
     };
   }, [handleMouseDown, handleMouseMove, handleMouseUp, canvasRef]);
 
-  return (
-    <>
-      <button
-        className={`p-2 rounded w-10 h-10 flex items-center justify-center ${
-          activeTool === "eraser" ? "bg-gray-300" : ""
-        }`}
-        onClick={() => setActiveTool("eraser")}
-      >
-        <Eraser
-          size={24}
-          className={
-            activeTool === "eraser" ? "text-gray-700" : "text-gray-500"
-          }
-        />
-      </button>
-
-      <div className="absolute bottom-4 left-4 bg-white shadow p-2 rounded">
-        <label className="block text-sm text-gray-600">지우개 크기</label>
-        <input
-          type="range"
-          min={5}
-          max={50}
-          value={eraserSize}
-          onChange={(e) => setEraserSize(parseInt(e.target.value))}
-        />
-      </div>
-    </>
-  );
+  return null;
 };
 
 export default EraserTool;

@@ -1,8 +1,9 @@
+// CanvasContent.tsx
 import { type FC, useEffect } from "react";
 
 interface CanvasProps {
   handleUndo: () => void;
-  canvasRef: React.RefObject<HTMLCanvasElement | null>; // ✅ null 허용으로 수정
+  canvasRef: React.RefObject<HTMLCanvasElement | null>;
 }
 
 const CanvasContent: FC<CanvasProps> = ({ handleUndo, canvasRef }) => {
@@ -27,8 +28,19 @@ const CanvasContent: FC<CanvasProps> = ({ handleUndo, canvasRef }) => {
       const container = canvas.parentElement;
       if (container) {
         const { width, height } = container.getBoundingClientRect();
-        canvas.width = width;
-        canvas.height = height;
+
+        const dpr = window.devicePixelRatio || 1;
+        canvas.width = width * dpr;
+        canvas.height = height * dpr;
+        canvas.style.width = `${width}px`;
+        canvas.style.height = `${height}px`;
+
+        const ctx = canvas.getContext("2d");
+        if (ctx) {
+          ctx.scale(dpr, dpr);
+          ctx.lineCap = "round";
+          ctx.lineJoin = "round";
+        }
       }
     };
 
@@ -40,7 +52,7 @@ const CanvasContent: FC<CanvasProps> = ({ handleUndo, canvasRef }) => {
     };
   }, [canvasRef]);
 
-  return null; // 캔버스는 부모에서 직접 렌더링
+  return null;
 };
 
 export default CanvasContent;
