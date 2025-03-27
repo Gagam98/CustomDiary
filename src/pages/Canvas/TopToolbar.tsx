@@ -1,7 +1,6 @@
 // ✅ TopToolbar.tsx 수정 요약
-// - 커서 변경 추가
-// - Undo 기능 구현 보완
-// - PenTool, EraserTool의 상태 저장과 연동됨
+// - Undo 버튼 제거됨
+// - 기타 도구 및 상태 관리 로직은 그대로 유지
 
 import { useState, useRef, ChangeEvent } from "react";
 import {
@@ -38,18 +37,6 @@ const TopToolbar = () => {
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const colorOptions = ["#FF0000", "#0000FF", "#000000", "#FFFFFF"];
-
-  const handleUndo = () => {
-    if (history.length === 0 || !canvasRef.current) return;
-    const newHistory = [...history];
-    const lastState = newHistory.pop();
-    setHistory(newHistory);
-
-    const ctx = canvasRef.current.getContext("2d");
-    if (ctx && lastState) {
-      ctx.putImageData(lastState, 0, 0);
-    }
-  };
 
   const renderToolbar = () => (
     <div className="flex items-center w-full relative">
@@ -139,13 +126,6 @@ const TopToolbar = () => {
               className="w-20"
             />
           )}
-
-          <button
-            className="p-2 rounded bg-gray-200 ml-auto"
-            onClick={handleUndo}
-          >
-            Undo
-          </button>
         </div>
       </div>
     </div>
