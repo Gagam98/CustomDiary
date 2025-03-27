@@ -1,12 +1,20 @@
 import { useEffect, useRef } from "react";
 import { Engine, Render, World, Bodies, Body } from "matter-js";
-import { FC } from "react";
 
-interface StickerPhysicsProps {
-  shapes: any[];
+interface Shape {
+  id: string;
+  shape: string;
+  x: number;
+  y: number;
+  size: number;
+  color: string;
 }
 
-const StickerPhysics: FC<StickerPhysicsProps> = ({ shapes }) => {
+interface StickerPhysicsProps {
+  shapes: Shape[];
+}
+
+const StickerPhysics: React.FC<StickerPhysicsProps> = ({ shapes }) => {
   const canvasRef = useRef<HTMLDivElement>(null);
   const engineRef = useRef<Matter.Engine | null>(null);
   const renderRef = useRef<Matter.Render | null>(null);
@@ -15,47 +23,50 @@ const StickerPhysics: FC<StickerPhysicsProps> = ({ shapes }) => {
   useEffect(() => {
     if (!canvasRef.current) return;
 
-    const engine = Engine.create({
-      gravity: { x: 0, y: 1.5 }, // 중력 값 증가
-    });
+    const engine = Engine.create({ gravity: { x: 0, y: 1.5 } });
     engineRef.current = engine;
 
     const render = Render.create({
       element: canvasRef.current,
-      engine: engine,
+      engine,
       options: {
         width: canvasRef.current.clientWidth,
         height: canvasRef.current.clientHeight,
         wireframes: false,
         background: "transparent",
       },
-    }) as Matter.Render & { options: Required<Matter.IRendererOptions> };
+    });
+
     renderRef.current = render;
 
     const wallOptions = { isStatic: true, render: { visible: false } };
     const thickness = 50;
 
+    // ✅ undefined 방지 위해 옵션 대신 canvas 사이즈 사용
+    const width = render.canvas?.width || canvasRef.current.clientWidth;
+    const height = render.canvas?.height || canvasRef.current.clientHeight;
+
     const ground = Bodies.rectangle(
-      render.options.width / 2,
-      render.options.height + thickness / 2,
-      render.options.width + thickness * 2,
+      width / 2,
+      height + thickness / 2,
+      width + thickness * 2,
       thickness,
       wallOptions
     );
 
     const leftWall = Bodies.rectangle(
       -thickness / 2,
-      render.options.height / 2,
+      height / 2,
       thickness,
-      render.options.height + thickness * 2,
+      height + thickness * 2,
       wallOptions
     );
 
     const rightWall = Bodies.rectangle(
-      render.options.width + thickness / 2,
-      render.options.height / 2,
+      width + thickness / 2,
+      height / 2,
       thickness,
-      render.options.height + thickness * 2,
+      height + thickness * 2,
       wallOptions
     );
 
@@ -88,7 +99,6 @@ const StickerPhysics: FC<StickerPhysicsProps> = ({ shapes }) => {
 
     shapes.forEach((shape) => {
       if (!bodiesRef.current[shape.id]) {
-        let body;
         const options = {
           restitution: 0.7,
           friction: 0.02,
@@ -99,6 +109,7 @@ const StickerPhysics: FC<StickerPhysicsProps> = ({ shapes }) => {
           },
         };
 
+        let body: Body;
         switch (shape.shape) {
           case "circle":
             body = Bodies.circle(shape.x, shape.y, shape.size / 2, options);
@@ -116,8 +127,6 @@ const StickerPhysics: FC<StickerPhysicsProps> = ({ shapes }) => {
             body = Bodies.polygon(shape.x, shape.y, 3, shape.size / 2, options);
             break;
           case "heart":
-            body = Bodies.circle(shape.x, shape.y, shape.size / 2, options);
-            break;
           case "star":
             body = Bodies.polygon(shape.x, shape.y, 5, shape.size / 2, options);
             break;
@@ -126,10 +135,10 @@ const StickerPhysics: FC<StickerPhysicsProps> = ({ shapes }) => {
         }
 
         Body.setAngle(body, Math.random() * Math.PI * 2);
-        Body.setVelocity(body, { x: 0, y: 3 }); // 초기에 아래로 떨어지는 속도 부여
+        Body.setVelocity(body, { x: 0, y: 3 });
         Body.applyForce(body, body.position, {
           x: (Math.random() - 0.5) * 0.005,
-          y: 0.1, // 더 강한 아래 방향 힘 적용
+          y: 0.1,
         });
 
         bodiesRef.current[shape.id] = body;
@@ -147,7 +156,10 @@ const StickerPhysics: FC<StickerPhysicsProps> = ({ shapes }) => {
   }, [shapes]);
 
   return (
-    <div ref={canvasRef} className="absolute inset-0 pointer-events-none"></div>
+    <div
+      ref={canvasRef}
+      className="absolute inset-0 pointer-events-none z-10"
+    />
   );
 };
 

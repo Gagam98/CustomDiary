@@ -1,11 +1,11 @@
 import { FiScissors, FiTool, FiType } from "react-icons/fi";
 
-interface SideStickbarProps {
+interface SideToolbarProps {
   activeSideTool: string;
   setActiveSideTool: (tool: string) => void;
 }
 
-const SideStickbar: React.FC<SideStickbarProps> = ({
+const SideToolbar: React.FC<SideToolbarProps> = ({
   activeSideTool,
   setActiveSideTool,
 }) => {
@@ -47,4 +47,4 @@ const SideStickbar: React.FC<SideStickbarProps> = ({
   );
 };
 
-export default SideStickbar;
+export default SideToolbar;

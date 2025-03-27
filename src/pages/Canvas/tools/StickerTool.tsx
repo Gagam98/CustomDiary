@@ -31,6 +31,8 @@ const StickerTool: React.FC<StickerToolProps> = ({
   stickers,
   canvasRef,
 }) => {
+  const TOOLBAR_HEIGHT = 88;
+
   const selectSticker = (shape: string) => {
     if (!canvasRef.current) return;
     const rect = canvasRef.current.getBoundingClientRect();
@@ -38,7 +40,7 @@ const StickerTool: React.FC<StickerToolProps> = ({
       id: `sticker-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
       shape,
       x: Math.random() * (rect.width * 0.8) + rect.width * 0.1,
-      y: Math.random() * (rect.height * 0.8) + rect.height * 0.1,
+      y: TOOLBAR_HEIGHT + Math.random() * (rect.height - TOOLBAR_HEIGHT - 100),
       size: Math.random() * 20 + 40,
       color: getRandomColor(),
     };

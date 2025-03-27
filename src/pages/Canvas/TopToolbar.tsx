@@ -1,8 +1,4 @@
-// ✅ TopToolbar.tsx 수정 요약
-// - Undo 버튼 제거됨
-// - 기타 도구 및 상태 관리 로직은 그대로 유지
-
-import { useState, useRef, ChangeEvent } from "react";
+import { useState, ChangeEvent, FC } from "react";
 import {
   ChevronLeft,
   Bookmark,
@@ -18,7 +14,7 @@ import EraserTool from "./tools/EraserTool";
 import StickerTool from "./tools/StickerTool";
 import TextTool from "./tools/TextTool";
 
-interface Sticker {
+export interface Sticker {
   id: string;
   shape: string;
   x: number;
@@ -27,15 +23,23 @@ interface Sticker {
   color: string;
 }
 
-const TopToolbar = () => {
+interface TopToolbarProps {
+  stickers: Sticker[];
+  setStickers: React.Dispatch<React.SetStateAction<Sticker[]>>;
+  canvasRef: React.RefObject<HTMLCanvasElement | null>;
+}
+
+const TopToolbar: FC<TopToolbarProps> = ({
+  stickers,
+  setStickers,
+  canvasRef,
+}) => {
   const [activeTool, setActiveTool] = useState<string>("pen");
   const [activeColor, setActiveColor] = useState<string>("#000000");
   const [eraserSize, setEraserSize] = useState<number>(10);
   const [lineWidth, setLineWidth] = useState<number>(3);
   const [history, setHistory] = useState<ImageData[]>([]);
-  const [stickers, setStickers] = useState<Sticker[]>([]);
 
-  const canvasRef = useRef<HTMLCanvasElement>(null);
   const colorOptions = ["#FF0000", "#0000FF", "#000000", "#FFFFFF"];
 
   const renderToolbar = () => (
@@ -132,7 +136,8 @@ const TopToolbar = () => {
   );
 
   return (
-    <div className="w-full h-screen flex flex-col">
+    <>
+      {/* 상단 네비게이션 바 */}
       <div className="w-full h-12 bg-gray-700 flex items-center px-4 justify-between">
         <div className="flex items-center">
           <button className="text-white p-2">
@@ -150,29 +155,12 @@ const TopToolbar = () => {
         </div>
       </div>
 
+      {/* 도구 선택 툴바 */}
       <div className="w-full bg-white border-b border-gray-200 p-2">
         {renderToolbar()}
       </div>
 
-      <div className="flex flex-1 overflow-hidden">
-        <div className="flex-1 bg-gray-50 flex justify-center items-center p-4">
-          <div className="w-full h-full bg-white shadow-md relative">
-            <canvas
-              ref={canvasRef}
-              className={`w-full h-full absolute top-0 left-0 ${
-                activeTool === "pen"
-                  ? "cursor-pen"
-                  : activeTool === "eraser"
-                  ? "cursor-cell"
-                  : activeTool === "text"
-                  ? "cursor-text"
-                  : "cursor-default"
-              }`}
-            />
-          </div>
-        </div>
-      </div>
-
+      {/* 툴 작동 로직 */}
       {activeTool === "pen" && (
         <PenTool
           activeTool={activeTool}
@@ -210,7 +198,7 @@ const TopToolbar = () => {
         />
       )}
       <TextTool activeTool={activeTool} canvasRef={canvasRef} />
-    </div>
+    </>
   );
 };
 
