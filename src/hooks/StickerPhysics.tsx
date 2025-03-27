@@ -1,7 +1,6 @@
 import { useEffect, useRef } from "react";
-import { Engine, Render, World, Bodies, Body } from "matter-js";
 
-interface Shape {
+interface Sticker {
   id: string;
   shape: string;
   x: number;
@@ -11,154 +10,98 @@ interface Shape {
 }
 
 interface StickerPhysicsProps {
-  shapes: Shape[];
+  shapes: Sticker[];
 }
 
 const StickerPhysics: React.FC<StickerPhysicsProps> = ({ shapes }) => {
-  const canvasRef = useRef<HTMLDivElement>(null);
-  const engineRef = useRef<Matter.Engine | null>(null);
-  const renderRef = useRef<Matter.Render | null>(null);
-  const bodiesRef = useRef<{ [key: string]: Body }>({});
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   useEffect(() => {
     if (!canvasRef.current) return;
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
 
-    const engine = Engine.create({ gravity: { x: 0, y: 1.5 } });
-    engineRef.current = engine;
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    const render = Render.create({
-      element: canvasRef.current,
-      engine,
-      options: {
-        width: canvasRef.current.clientWidth,
-        height: canvasRef.current.clientHeight,
-        wireframes: false,
-        background: "transparent",
-      },
-    });
+    for (const sticker of shapes) {
+      ctx.save();
+      ctx.fillStyle = sticker.color;
+      ctx.translate(sticker.x, sticker.y);
 
-    renderRef.current = render;
+      const s = sticker.size;
 
-    const wallOptions = { isStatic: true, render: { visible: false } };
-    const thickness = 50;
+      switch (sticker.shape) {
+        case "circle":
+          ctx.beginPath();
+          ctx.arc(0, 0, s / 2, 0, 2 * Math.PI);
+          ctx.fill();
+          break;
 
-    // ✅ undefined 방지 위해 옵션 대신 canvas 사이즈 사용
-    const width = render.canvas?.width || canvasRef.current.clientWidth;
-    const height = render.canvas?.height || canvasRef.current.clientHeight;
+        case "square":
+          ctx.fillRect(-s / 2, -s / 2, s, s);
+          break;
 
-    const ground = Bodies.rectangle(
-      width / 2,
-      height + thickness / 2,
-      width + thickness * 2,
-      thickness,
-      wallOptions
-    );
+        case "triangle":
+          ctx.beginPath();
+          ctx.moveTo(0, -s / 2);
+          ctx.lineTo(s / 2, s / 2);
+          ctx.lineTo(-s / 2, s / 2);
+          ctx.closePath();
+          ctx.fill();
+          break;
 
-    const leftWall = Bodies.rectangle(
-      -thickness / 2,
-      height / 2,
-      thickness,
-      height + thickness * 2,
-      wallOptions
-    );
+        case "heart":
+          ctx.beginPath();
+          ctx.moveTo(0, -s / 4);
+          ctx.bezierCurveTo(s / 2, -s / 2, s / 2, s / 4, 0, s / 2);
+          ctx.bezierCurveTo(-s / 2, s / 4, -s / 2, -s / 2, 0, -s / 4);
+          ctx.closePath();
+          ctx.fill();
+          break;
 
-    const rightWall = Bodies.rectangle(
-      width + thickness / 2,
-      height / 2,
-      thickness,
-      height + thickness * 2,
-      wallOptions
-    );
+        case "star": {
+          const spikes = 5;
+          const outerRadius = s / 2;
+          const innerRadius = s / 4;
+          let rot = (Math.PI / 2) * 3;
+          let x = 0;
+          let y = 0;
+          const step = Math.PI / spikes;
 
-    World.add(engine.world, [ground, leftWall, rightWall]);
+          ctx.beginPath();
+          ctx.moveTo(0, -outerRadius);
+          for (let i = 0; i < spikes; i++) {
+            x = Math.cos(rot) * outerRadius;
+            y = Math.sin(rot) * outerRadius;
+            ctx.lineTo(x, y);
+            rot += step;
 
-    Engine.run(engine);
-    Render.run(render);
-
-    const handleResize = () => {
-      if (renderRef.current && canvasRef.current) {
-        renderRef.current.options.width = canvasRef.current.clientWidth;
-        renderRef.current.options.height = canvasRef.current.clientHeight;
-        Render.setPixelRatio(renderRef.current, window.devicePixelRatio);
-      }
-    };
-
-    window.addEventListener("resize", handleResize);
-    return () => {
-      Render.stop(render);
-      Engine.clear(engine);
-      window.removeEventListener("resize", handleResize);
-      if (render.canvas) render.canvas.remove();
-      if (render.textures) render.textures = {};
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!engineRef.current) return;
-    const engine = engineRef.current;
-
-    shapes.forEach((shape) => {
-      if (!bodiesRef.current[shape.id]) {
-        const options = {
-          restitution: 0.7,
-          friction: 0.02,
-          render: {
-            fillStyle: shape.color,
-            strokeStyle: "black",
-            lineWidth: 1,
-          },
-        };
-
-        let body: Body;
-        switch (shape.shape) {
-          case "circle":
-            body = Bodies.circle(shape.x, shape.y, shape.size / 2, options);
-            break;
-          case "square":
-            body = Bodies.rectangle(
-              shape.x,
-              shape.y,
-              shape.size,
-              shape.size,
-              options
-            );
-            break;
-          case "triangle":
-            body = Bodies.polygon(shape.x, shape.y, 3, shape.size / 2, options);
-            break;
-          case "heart":
-          case "star":
-            body = Bodies.polygon(shape.x, shape.y, 5, shape.size / 2, options);
-            break;
-          default:
-            body = Bodies.circle(shape.x, shape.y, shape.size / 2, options);
+            x = Math.cos(rot) * innerRadius;
+            y = Math.sin(rot) * innerRadius;
+            ctx.lineTo(x, y);
+            rot += step;
+          }
+          ctx.lineTo(0, -outerRadius);
+          ctx.closePath();
+          ctx.fill();
+          break;
         }
 
-        Body.setAngle(body, Math.random() * Math.PI * 2);
-        Body.setVelocity(body, { x: 0, y: 3 });
-        Body.applyForce(body, body.position, {
-          x: (Math.random() - 0.5) * 0.005,
-          y: 0.1,
-        });
-
-        bodiesRef.current[shape.id] = body;
-        World.add(engine.world, body);
+        default:
+          break;
       }
-    });
 
-    const currentIds = shapes.map((s) => s.id);
-    Object.keys(bodiesRef.current).forEach((id) => {
-      if (!currentIds.includes(id)) {
-        World.remove(engine.world, bodiesRef.current[id]);
-        delete bodiesRef.current[id];
-      }
-    });
+      ctx.restore();
+    }
   }, [shapes]);
 
   return (
-    <div
+    <canvas
       ref={canvasRef}
-      className="absolute inset-0 pointer-events-none z-10"
+      className="pointer-events-none absolute top-0 left-0 w-full h-full z-10"
     />
   );
 };

@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { FiStar } from "react-icons/fi";
 import { BsCircle, BsSquare, BsTriangle, BsHeart } from "react-icons/bs";
 
@@ -24,13 +24,29 @@ interface StickerToolProps {
     color: string;
   }>;
   canvasRef: React.RefObject<HTMLCanvasElement | null>;
+  anchorRef: React.RefObject<HTMLElement | null>;
 }
 
 const StickerTool: React.FC<StickerToolProps> = ({
   setStickers,
   stickers,
   canvasRef,
+  anchorRef,
 }) => {
+  const [popupStyle, setPopupStyle] = useState<React.CSSProperties>({});
+
+  useEffect(() => {
+    if (anchorRef.current) {
+      const rect = anchorRef.current.getBoundingClientRect();
+      setPopupStyle({
+        position: "absolute",
+        top: rect.bottom + window.scrollY + 8,
+        left: rect.left + window.scrollX,
+        zIndex: 100,
+      });
+    }
+  }, [anchorRef]);
+
   const TOOLBAR_HEIGHT = 88;
 
   const selectSticker = (shape: string) => {
@@ -74,7 +90,7 @@ const StickerTool: React.FC<StickerToolProps> = ({
   }, [stickers]);
 
   return (
-    <div className="absolute top-16 left-4 bg-white shadow-lg rounded-md p-3 z-20">
+    <div style={popupStyle} className="bg-white shadow-lg rounded-md p-3">
       <div className="text-center mb-2 text-gray-700 font-medium">
         스티커 모양 선택
       </div>

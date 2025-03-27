@@ -1,4 +1,4 @@
-import { useState, ChangeEvent, FC } from "react";
+import { useState, ChangeEvent, FC, useRef } from "react";
 import {
   ChevronLeft,
   Bookmark,
@@ -39,105 +39,12 @@ const TopToolbar: FC<TopToolbarProps> = ({
   const [eraserSize, setEraserSize] = useState<number>(10);
   const [lineWidth, setLineWidth] = useState<number>(3);
   const [history, setHistory] = useState<ImageData[]>([]);
+  const stickerButtonRef = useRef<HTMLButtonElement | null>(null);
 
   const colorOptions = ["#FF0000", "#0000FF", "#000000", "#FFFFFF"];
 
-  const renderToolbar = () => (
-    <div className="flex items-center w-full relative">
-      <div className="absolute left-1/2 transform -translate-x-1/2 top-0 bottom-0 w-px bg-gray-300"></div>
-
-      <div className="w-1/2 flex items-center justify-end pr-4">
-        <div className="flex items-center space-x-2">
-          <button
-            className={`p-2 rounded ${
-              activeTool === "pen" ? "bg-blue-100" : ""
-            }`}
-            onClick={() => setActiveTool("pen")}
-          >
-            <Pen size={20} />
-          </button>
-          <button
-            className={`p-2 rounded ${
-              activeTool === "eraser" ? "bg-blue-100" : ""
-            }`}
-            onClick={() => setActiveTool("eraser")}
-          >
-            <Eraser size={20} />
-          </button>
-          <button
-            className={`p-2 rounded ${
-              activeTool === "sticker" ? "bg-blue-100" : ""
-            }`}
-            onClick={() => setActiveTool("sticker")}
-          >
-            <FiStar size={20} />
-          </button>
-          <button
-            className={`p-2 rounded ${
-              activeTool === "image" ? "bg-blue-100" : ""
-            }`}
-            onClick={() => setActiveTool("image")}
-          >
-            <ImageIcon size={20} />
-          </button>
-          <button
-            className={`p-2 rounded ${
-              activeTool === "text" ? "bg-blue-100" : ""
-            }`}
-            onClick={() => setActiveTool("text")}
-          >
-            <Type size={20} />
-          </button>
-        </div>
-      </div>
-
-      <div className="w-1/2 flex items-center pl-4">
-        <div className="flex items-center space-x-2 flex-grow">
-          {activeTool === "pen" && (
-            <>
-              {colorOptions.map((color) => (
-                <button
-                  key={color}
-                  className={`w-6 h-6 rounded-full ${
-                    activeColor === color ? "ring-2 ring-gray-700" : ""
-                  } ${color === "#FFFFFF" ? "border border-gray-300" : ""}`}
-                  style={{ backgroundColor: color }}
-                  onClick={() => setActiveColor(color)}
-                />
-              ))}
-              <input
-                type="range"
-                min={1}
-                max={10}
-                value={lineWidth}
-                onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                  setLineWidth(parseInt(e.target.value))
-                }
-                className="w-20"
-              />
-            </>
-          )}
-
-          {activeTool === "eraser" && (
-            <input
-              type="range"
-              min={5}
-              max={50}
-              value={eraserSize}
-              onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                setEraserSize(parseInt(e.target.value))
-              }
-              className="w-20"
-            />
-          )}
-        </div>
-      </div>
-    </div>
-  );
-
   return (
     <>
-      {/* 상단 네비게이션 바 */}
       <div className="w-full h-12 bg-gray-700 flex items-center px-4 justify-between">
         <div className="flex items-center">
           <button className="text-white p-2">
@@ -155,12 +62,98 @@ const TopToolbar: FC<TopToolbarProps> = ({
         </div>
       </div>
 
-      {/* 도구 선택 툴바 */}
       <div className="w-full bg-white border-b border-gray-200 p-2">
-        {renderToolbar()}
+        <div className="flex items-center w-full relative">
+          <div className="w-1/2 flex items-center justify-end pr-4">
+            <div className="flex items-center space-x-2">
+              <button
+                className={`p-2 rounded ${
+                  activeTool === "pen" ? "bg-blue-100" : ""
+                }`}
+                onClick={() => setActiveTool("pen")}
+              >
+                <Pen size={20} />
+              </button>
+              <button
+                className={`p-2 rounded ${
+                  activeTool === "eraser" ? "bg-blue-100" : ""
+                }`}
+                onClick={() => setActiveTool("eraser")}
+              >
+                <Eraser size={20} />
+              </button>
+              <button
+                ref={stickerButtonRef}
+                className={`p-2 rounded ${
+                  activeTool === "sticker" ? "bg-blue-100" : ""
+                }`}
+                onClick={() => setActiveTool("sticker")}
+              >
+                <FiStar size={20} />
+              </button>
+              <button
+                className={`p-2 rounded ${
+                  activeTool === "image" ? "bg-blue-100" : ""
+                }`}
+                onClick={() => setActiveTool("image")}
+              >
+                <ImageIcon size={20} />
+              </button>
+              <button
+                className={`p-2 rounded ${
+                  activeTool === "text" ? "bg-blue-100" : ""
+                }`}
+                onClick={() => setActiveTool("text")}
+              >
+                <Type size={20} />
+              </button>
+            </div>
+          </div>
+
+          <div className="w-1/2 flex items-center pl-4">
+            <div className="flex items-center space-x-2 flex-grow">
+              {activeTool === "pen" && (
+                <>
+                  {colorOptions.map((color) => (
+                    <button
+                      key={color}
+                      className={`w-6 h-6 rounded-full ${
+                        activeColor === color ? "ring-2 ring-gray-700" : ""
+                      } ${color === "#FFFFFF" ? "border border-gray-300" : ""}`}
+                      style={{ backgroundColor: color }}
+                      onClick={() => setActiveColor(color)}
+                    />
+                  ))}
+                  <input
+                    type="range"
+                    min={1}
+                    max={10}
+                    value={lineWidth}
+                    onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                      setLineWidth(parseInt(e.target.value))
+                    }
+                    className="w-20"
+                  />
+                </>
+              )}
+
+              {activeTool === "eraser" && (
+                <input
+                  type="range"
+                  min={5}
+                  max={50}
+                  value={eraserSize}
+                  onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                    setEraserSize(parseInt(e.target.value))
+                  }
+                  className="w-20"
+                />
+              )}
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* 툴 작동 로직 */}
       {activeTool === "pen" && (
         <PenTool
           activeTool={activeTool}
@@ -181,10 +174,10 @@ const TopToolbar: FC<TopToolbarProps> = ({
             const ctx = canvasRef.current.getContext("2d");
             if (!ctx) return;
             const imageData = ctx.getImageData(
-              0,
-              0,
               canvasRef.current.width,
-              canvasRef.current.height
+              canvasRef.current.height,
+              0,
+              0
             );
             setHistory((prev) => [...prev, imageData]);
           }}
@@ -195,6 +188,7 @@ const TopToolbar: FC<TopToolbarProps> = ({
           setStickers={setStickers}
           stickers={stickers}
           canvasRef={canvasRef}
+          anchorRef={stickerButtonRef}
         />
       )}
       <TextTool activeTool={activeTool} canvasRef={canvasRef} />
