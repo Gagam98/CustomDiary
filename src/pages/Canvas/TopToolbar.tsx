@@ -1,4 +1,8 @@
-// TopToolbar.tsx
+// ✅ TopToolbar.tsx 수정 요약
+// - 커서 변경 추가
+// - Undo 기능 구현 보완
+// - PenTool, EraserTool의 상태 저장과 연동됨
+
 import { useState, useRef, ChangeEvent } from "react";
 import {
   ChevronLeft,
@@ -13,41 +17,44 @@ import { FiStar } from "react-icons/fi";
 import PenTool from "./tools/PenTool";
 import EraserTool from "./tools/EraserTool";
 import StickerTool from "./tools/StickerTool";
+import TextTool from "./tools/TextTool";
 
-const Index = () => {
+interface Sticker {
+  id: string;
+  shape: string;
+  x: number;
+  y: number;
+  size: number;
+  color: string;
+}
+
+const TopToolbar = () => {
   const [activeTool, setActiveTool] = useState<string>("pen");
   const [activeColor, setActiveColor] = useState<string>("#000000");
   const [eraserSize, setEraserSize] = useState<number>(10);
   const [lineWidth, setLineWidth] = useState<number>(3);
   const [history, setHistory] = useState<ImageData[]>([]);
-  const [stickers, setStickers] = useState<
-    Array<{
-      id: string;
-      shape: string;
-      x: number;
-      y: number;
-      size: number;
-      color: string;
-    }>
-  >([]);
+  const [stickers, setStickers] = useState<Sticker[]>([]);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const colorOptions = ["#FF0000", "#0000FF", "#000000", "#FFFFFF"];
 
   const handleUndo = () => {
-    if (history.length > 0) {
-      const newHistory = [...history];
-      newHistory.pop();
-      setHistory(newHistory);
+    if (history.length === 0 || !canvasRef.current) return;
+    const newHistory = [...history];
+    const lastState = newHistory.pop();
+    setHistory(newHistory);
+
+    const ctx = canvasRef.current.getContext("2d");
+    if (ctx && lastState) {
+      ctx.putImageData(lastState, 0, 0);
     }
   };
 
   const renderToolbar = () => (
     <div className="flex items-center w-full relative">
-      {/* Center divider line (fixed position) */}
       <div className="absolute left-1/2 transform -translate-x-1/2 top-0 bottom-0 w-px bg-gray-300"></div>
 
-      {/* Left tools section (fixed position) */}
       <div className="w-1/2 flex items-center justify-end pr-4">
         <div className="flex items-center space-x-2">
           <button
@@ -93,7 +100,6 @@ const Index = () => {
         </div>
       </div>
 
-      {/* Right controls section (dynamically sized) */}
       <div className="w-1/2 flex items-center pl-4">
         <div className="flex items-center space-x-2 flex-grow">
           {activeTool === "pen" && (
@@ -147,7 +153,6 @@ const Index = () => {
 
   return (
     <div className="w-full h-screen flex flex-col">
-      {/* Header */}
       <div className="w-full h-12 bg-gray-700 flex items-center px-4 justify-between">
         <div className="flex items-center">
           <button className="text-white p-2">
@@ -165,20 +170,29 @@ const Index = () => {
         </div>
       </div>
 
-      {/* Toolbar */}
       <div className="w-full bg-white border-b border-gray-200 p-2">
         {renderToolbar()}
       </div>
 
       <div className="flex flex-1 overflow-hidden">
         <div className="flex-1 bg-gray-50 flex justify-center items-center p-4">
-          <div className="w-full h-full bg-white shadow-md">
-            <canvas ref={canvasRef} className="w-full h-full" />
+          <div className="w-full h-full bg-white shadow-md relative">
+            <canvas
+              ref={canvasRef}
+              className={`w-full h-full absolute top-0 left-0 ${
+                activeTool === "pen"
+                  ? "cursor-pen"
+                  : activeTool === "eraser"
+                  ? "cursor-cell"
+                  : activeTool === "text"
+                  ? "cursor-text"
+                  : "cursor-default"
+              }`}
+            />
           </div>
         </div>
       </div>
 
-      {/* Tool Components */}
       {activeTool === "pen" && (
         <PenTool
           activeTool={activeTool}
@@ -194,7 +208,18 @@ const Index = () => {
           activeTool={activeTool}
           eraserSize={eraserSize}
           canvasRef={canvasRef}
-          saveCanvasState={() => setHistory([...history])}
+          saveCanvasState={() => {
+            if (!canvasRef.current) return;
+            const ctx = canvasRef.current.getContext("2d");
+            if (!ctx) return;
+            const imageData = ctx.getImageData(
+              0,
+              0,
+              canvasRef.current.width,
+              canvasRef.current.height
+            );
+            setHistory((prev) => [...prev, imageData]);
+          }}
         />
       )}
       {activeTool === "sticker" && (
@@ -204,8 +229,9 @@ const Index = () => {
           canvasRef={canvasRef}
         />
       )}
+      <TextTool activeTool={activeTool} canvasRef={canvasRef} />
     </div>
   );
 };
 
-export default Index;
+export default TopToolbar;
