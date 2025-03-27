@@ -1,12 +1,14 @@
-import { FC, useRef, useEffect, useCallback } from "react";
+import { FC, useEffect, useCallback, RefObject, useRef } from "react";
 
 interface PenToolProps {
   activeTool: string;
   activeColor: string;
   lineWidth: number;
-  canvasRef: React.RefObject<HTMLCanvasElement | null>;
+  canvasRef: RefObject<HTMLCanvasElement | null>;
   history: ImageData[];
   setHistory: (history: ImageData[]) => void;
+  ctxRef: RefObject<CanvasRenderingContext2D | null>;
+  saveCanvasState: () => void;
 }
 
 const PenTool: FC<PenToolProps> = ({
@@ -16,19 +18,16 @@ const PenTool: FC<PenToolProps> = ({
   canvasRef,
   history,
   setHistory,
+  ctxRef,
 }) => {
-  const ctxRef = useRef<CanvasRenderingContext2D | null>(null);
   const isDrawing = useRef(false);
-  const latestImageRef = useRef<ImageData | null>(null); // 🟡 최신 상태 저장
 
-  // ✅ 캔버스 설정 및 고해상도 스케일 적용
   const setupCanvas = useCallback(() => {
     if (!canvasRef.current) return;
     const canvas = canvasRef.current;
     const rect = canvas.getBoundingClientRect();
     const dpr = window.devicePixelRatio || 1;
 
-    // 👉 기존 이미지 백업
     const backupCtx = canvas.getContext("2d");
     let prevImageData: ImageData | null = null;
     if (backupCtx) {
@@ -40,17 +39,14 @@ const PenTool: FC<PenToolProps> = ({
           canvas.height
         );
       } catch {
-        console.warn("기존 이미지 데이터를 가져오지 못했습니다.");
+        // Ignore error when getting image data
       }
     }
 
-    // 👉 캔버스 크기 재설정 (초기화됨)
-    canvas.width = rect.width * dpr;
-    canvas.height = rect.height * dpr;
     canvas.style.width = `${rect.width}px`;
     canvas.style.height = `${rect.height}px`;
 
-    const ctx = canvas.getContext("2d", { alpha: false });
+    const ctx = canvas.getContext("2d", { alpha: true });
     if (ctx) {
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.scale(dpr, dpr);
@@ -62,16 +58,12 @@ const PenTool: FC<PenToolProps> = ({
       ctx.imageSmoothingQuality = "high";
       ctxRef.current = ctx;
 
-      // 👉 이전 이미지 복원
       if (prevImageData) {
         ctx.putImageData(prevImageData, 0, 0);
-      } else if (latestImageRef.current) {
-        ctx.putImageData(latestImageRef.current, 0, 0);
       }
     }
-  }, [canvasRef, activeColor, lineWidth]);
+  }, [canvasRef, activeColor, lineWidth, ctxRef]);
 
-  // 초기 설정 + 리사이즈 시 처리
   useEffect(() => {
     setupCanvas();
     const handleResize = () => setupCanvas();
@@ -79,25 +71,24 @@ const PenTool: FC<PenToolProps> = ({
     return () => window.removeEventListener("resize", handleResize);
   }, [setupCanvas]);
 
-  // 색상/두께 변경 반영
   useEffect(() => {
     if (ctxRef.current) {
       ctxRef.current.strokeStyle = activeColor;
       ctxRef.current.lineWidth = lineWidth;
     }
-  }, [activeColor, lineWidth]);
+  }, [activeColor, lineWidth, ctxRef]);
 
-  // 현재 캔버스 상태 저장
   const saveCanvasState = useCallback(() => {
     if (!canvasRef.current || !ctxRef.current) return;
-    const ctx = ctxRef.current;
-    const canvas = canvasRef.current;
-    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    latestImageRef.current = imageData; // 🟢 최신 이미지 저장
+    const imageData = ctxRef.current.getImageData(
+      0,
+      0,
+      canvasRef.current.width,
+      canvasRef.current.height
+    );
     setHistory([...history, imageData]);
-  }, [canvasRef, history, setHistory]);
+  }, [canvasRef, ctxRef, history, setHistory]);
 
-  // 마우스 좌표 계산
   const getMousePosition = useCallback(
     (event: MouseEvent) => {
       if (!canvasRef.current) return { x: 0, y: 0 };
@@ -110,7 +101,6 @@ const PenTool: FC<PenToolProps> = ({
     [canvasRef]
   );
 
-  // 마우스 이벤트 처리
   const handleMouseDown = useCallback(
     (event: MouseEvent) => {
       if (!ctxRef.current || !canvasRef.current || activeTool !== "pen") return;
@@ -121,7 +111,7 @@ const PenTool: FC<PenToolProps> = ({
       ctx.moveTo(x, y);
       isDrawing.current = true;
     },
-    [canvasRef, activeTool, getMousePosition, saveCanvasState]
+    [canvasRef, activeTool, getMousePosition, saveCanvasState, ctxRef]
   );
 
   const handleMouseMove = useCallback(
@@ -131,14 +121,14 @@ const PenTool: FC<PenToolProps> = ({
       ctxRef.current.lineTo(x, y);
       ctxRef.current.stroke();
     },
-    [getMousePosition]
+    [getMousePosition, ctxRef]
   );
 
   const handleMouseUp = useCallback(() => {
     if (!ctxRef.current) return;
     ctxRef.current.closePath();
     isDrawing.current = false;
-  }, []);
+  }, [ctxRef]);
 
   useEffect(() => {
     if (!canvasRef.current) return;

@@ -12,11 +12,7 @@ const Index = () => {
   return (
     <div className="w-full h-screen flex flex-col">
       {/* 상단 툴바 */}
-      <TopToolbar
-        stickers={stickers}
-        setStickers={setStickers}
-        canvasRef={canvasRef}
-      />
+      <TopToolbar setStickers={setStickers} canvasRef={canvasRef} />
 
       {/* 사이드바 + 캔버스 영역 */}
       <div className="flex flex-1 min-h-0">

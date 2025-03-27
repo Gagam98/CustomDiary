@@ -1,4 +1,4 @@
-import { useState, ChangeEvent, FC, useRef } from "react";
+import { useState, ChangeEvent, FC, useRef, useEffect } from "react";
 import {
   ChevronLeft,
   Bookmark,
@@ -24,24 +24,43 @@ export interface Sticker {
 }
 
 interface TopToolbarProps {
-  stickers: Sticker[];
   setStickers: React.Dispatch<React.SetStateAction<Sticker[]>>;
   canvasRef: React.RefObject<HTMLCanvasElement | null>;
 }
 
-const TopToolbar: FC<TopToolbarProps> = ({
-  stickers,
-  setStickers,
-  canvasRef,
-}) => {
+const TopToolbar: FC<TopToolbarProps> = ({ setStickers, canvasRef }) => {
   const [activeTool, setActiveTool] = useState<string>("pen");
   const [activeColor, setActiveColor] = useState<string>("#000000");
   const [eraserSize, setEraserSize] = useState<number>(10);
   const [lineWidth, setLineWidth] = useState<number>(3);
   const [history, setHistory] = useState<ImageData[]>([]);
+  const [showStickerPopup, setShowStickerPopup] = useState<boolean>(false);
+  const ctxRef = useRef<CanvasRenderingContext2D | null>(null);
   const stickerButtonRef = useRef<HTMLButtonElement | null>(null);
-
   const colorOptions = ["#FF0000", "#0000FF", "#000000", "#FFFFFF"];
+
+  // 캔버스 컨텍스트 초기화
+  useEffect(() => {
+    if (!canvasRef.current) return;
+    const ctx = canvasRef.current.getContext("2d", { alpha: true });
+    if (ctx) {
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+      ctxRef.current = ctx;
+    }
+  }, [canvasRef]);
+
+  // 상태 저장 함수
+  const saveCanvasState = () => {
+    if (!canvasRef.current || !ctxRef.current) return;
+    const imageData = ctxRef.current.getImageData(
+      0,
+      0,
+      canvasRef.current.width,
+      canvasRef.current.height
+    );
+    setHistory((prev) => [...prev, imageData]);
+  };
 
   return (
     <>
@@ -87,7 +106,10 @@ const TopToolbar: FC<TopToolbarProps> = ({
                 className={`p-2 rounded ${
                   activeTool === "sticker" ? "bg-blue-100" : ""
                 }`}
-                onClick={() => setActiveTool("sticker")}
+                onClick={() => {
+                  setActiveTool("sticker");
+                  setShowStickerPopup((prev) => !prev);
+                }}
               >
                 <FiStar size={20} />
               </button>
@@ -162,6 +184,8 @@ const TopToolbar: FC<TopToolbarProps> = ({
           canvasRef={canvasRef}
           history={history}
           setHistory={setHistory}
+          ctxRef={ctxRef}
+          saveCanvasState={saveCanvasState}
         />
       )}
       {activeTool === "eraser" && (
@@ -169,26 +193,16 @@ const TopToolbar: FC<TopToolbarProps> = ({
           activeTool={activeTool}
           eraserSize={eraserSize}
           canvasRef={canvasRef}
-          saveCanvasState={() => {
-            if (!canvasRef.current) return;
-            const ctx = canvasRef.current.getContext("2d");
-            if (!ctx) return;
-            const imageData = ctx.getImageData(
-              canvasRef.current.width,
-              canvasRef.current.height,
-              0,
-              0
-            );
-            setHistory((prev) => [...prev, imageData]);
-          }}
+          ctxRef={ctxRef}
+          saveCanvasState={saveCanvasState}
         />
       )}
-      {activeTool === "sticker" && (
+      {activeTool === "sticker" && showStickerPopup && (
         <StickerTool
           setStickers={setStickers}
-          stickers={stickers}
           canvasRef={canvasRef}
           anchorRef={stickerButtonRef}
+          onRequestClose={() => setShowStickerPopup(false)}
         />
       )}
       <TextTool activeTool={activeTool} canvasRef={canvasRef} />

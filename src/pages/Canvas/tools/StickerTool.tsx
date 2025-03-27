@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+// ✅ StickerTool.tsx - 팝업 상태 외부 제어 방식으로 전환
+import { useEffect, useState, useRef } from "react";
 import { FiStar } from "react-icons/fi";
 import { BsCircle, BsSquare, BsTriangle, BsHeart } from "react-icons/bs";
 
@@ -15,25 +16,19 @@ interface StickerToolProps {
       }>
     >
   >;
-  stickers: Array<{
-    id: string;
-    shape: string;
-    x: number;
-    y: number;
-    size: number;
-    color: string;
-  }>;
   canvasRef: React.RefObject<HTMLCanvasElement | null>;
   anchorRef: React.RefObject<HTMLElement | null>;
+  onRequestClose: () => void;
 }
 
 const StickerTool: React.FC<StickerToolProps> = ({
   setStickers,
-  stickers,
   canvasRef,
   anchorRef,
+  onRequestClose,
 }) => {
   const [popupStyle, setPopupStyle] = useState<React.CSSProperties>({});
+  const popupRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (anchorRef.current) {
@@ -46,6 +41,21 @@ const StickerTool: React.FC<StickerToolProps> = ({
       });
     }
   }, [anchorRef]);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        popupRef.current &&
+        !popupRef.current.contains(e.target as Node) &&
+        anchorRef.current &&
+        !anchorRef.current.contains(e.target as Node)
+      ) {
+        onRequestClose();
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [popupRef, anchorRef, onRequestClose]);
 
   const TOOLBAR_HEIGHT = 88;
 
@@ -61,6 +71,7 @@ const StickerTool: React.FC<StickerToolProps> = ({
       color: getRandomColor(),
     };
     setStickers((prev) => [...prev, newSticker]);
+    onRequestClose();
   };
 
   const getRandomColor = () => {
@@ -85,12 +96,12 @@ const StickerTool: React.FC<StickerToolProps> = ({
     { name: "star", icon: <FiStar size={20} /> },
   ];
 
-  useEffect(() => {
-    console.log("현재 스티커 개수:", stickers.length);
-  }, [stickers]);
-
   return (
-    <div style={popupStyle} className="bg-white shadow-lg rounded-md p-3">
+    <div
+      ref={popupRef}
+      style={popupStyle}
+      className="bg-white shadow-lg rounded-md p-3"
+    >
       <div className="text-center mb-2 text-gray-700 font-medium">
         스티커 모양 선택
       </div>
