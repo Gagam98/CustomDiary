@@ -1,4 +1,3 @@
-// ✅ StickerTool.tsx - 팝업 상태 외부 제어 방식으로 전환
 import { useEffect, useState, useRef } from "react";
 import { FiStar } from "react-icons/fi";
 import { BsCircle, BsSquare, BsTriangle, BsHeart } from "react-icons/bs";
