@@ -13,6 +13,7 @@ import PenTool from "./tools/PenTool";
 import EraserTool from "./tools/EraserTool";
 import StickerTool from "./tools/StickerTool";
 import TextTool from "./tools/TextTool";
+import PhotoTool from "./tools/PhotoTool";
 
 export interface Sticker {
   id: string;
@@ -23,12 +24,26 @@ export interface Sticker {
   color: string;
 }
 
+export interface Photo {
+  id: string;
+  image: HTMLImageElement;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
 interface TopToolbarProps {
   setStickers: React.Dispatch<React.SetStateAction<Sticker[]>>;
+  setPhotos: React.Dispatch<React.SetStateAction<Photo[]>>;
   canvasRef: React.RefObject<HTMLCanvasElement | null>;
 }
 
-const TopToolbar: FC<TopToolbarProps> = ({ setStickers, canvasRef }) => {
+const TopToolbar: FC<TopToolbarProps> = ({
+  setStickers,
+  setPhotos,
+  canvasRef,
+}) => {
   const [activeTool, setActiveTool] = useState<string>("pen");
   const [activeColor, setActiveColor] = useState<string>("#000000");
   const [eraserSize, setEraserSize] = useState<number>(10);
@@ -38,6 +53,7 @@ const TopToolbar: FC<TopToolbarProps> = ({ setStickers, canvasRef }) => {
   const ctxRef = useRef<CanvasRenderingContext2D | null>(null);
   const stickerButtonRef = useRef<HTMLButtonElement | null>(null);
   const colorOptions = ["#FF0000", "#0000FF", "#000000", "#FFFFFF"];
+  const photoToolRef = useRef<HTMLInputElement>(null);
 
   // 캔버스 컨텍스트 초기화
   useEffect(() => {
@@ -117,7 +133,10 @@ const TopToolbar: FC<TopToolbarProps> = ({ setStickers, canvasRef }) => {
                 className={`p-2 rounded ${
                   activeTool === "image" ? "bg-blue-100" : ""
                 }`}
-                onClick={() => setActiveTool("image")}
+                onClick={() => {
+                  setActiveTool("image");
+                  photoToolRef.current?.click();
+                }}
               >
                 <ImageIcon size={20} />
               </button>
@@ -203,6 +222,13 @@ const TopToolbar: FC<TopToolbarProps> = ({ setStickers, canvasRef }) => {
           canvasRef={canvasRef}
           anchorRef={stickerButtonRef}
           onRequestClose={() => setShowStickerPopup(false)}
+        />
+      )}
+      {activeTool === "image" && (
+        <PhotoTool
+          setPhotos={setPhotos}
+          canvasRef={canvasRef}
+          ref={photoToolRef}
         />
       )}
       <TextTool activeTool={activeTool} canvasRef={canvasRef} />

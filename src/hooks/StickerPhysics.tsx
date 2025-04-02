@@ -97,9 +97,9 @@ const StickerPhysics: React.FC<StickerPhysicsProps> = ({ shapes }) => {
       if (!bodiesRef.current[sticker.id]) {
         let body;
         const options = {
-          restitution: 0.6,
+          restitution: 0.8, // 스티커의 탄성 증가
           friction: 0.1,
-          density: 0.002,
+          density: 0.001,
         };
 
         switch (sticker.shape) {
