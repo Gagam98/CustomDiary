@@ -66,7 +66,7 @@ const StickerTool: React.FC<StickerToolProps> = ({
       shape,
       x: Math.random() * (rect.width * 0.8) + rect.width * 0.1,
       y: TOOLBAR_HEIGHT + Math.random() * (rect.height - TOOLBAR_HEIGHT - 100),
-      size: Math.random() * 20 + 40,
+      size: (Math.random() * 20 + 40) * 1.5,
       color: getRandomColor(),
     };
     setStickers((prev) => [...prev, newSticker]);
@@ -75,14 +75,14 @@ const StickerTool: React.FC<StickerToolProps> = ({
 
   const getRandomColor = () => {
     const colors = [
-      "#FF5733",
-      "#33FF57",
-      "#3357FF",
-      "#F3FF33",
-      "#FF33F3",
-      "#33FFF3",
-      "#FF8333",
-      "#8333FF",
+      "#0079FF",
+      "#00DFA2",
+      "#F6FA70",
+      "#FF0060",
+      "#FF76CE",
+      "#B1AFFF",
+      "#A3D8FF",
+      "#B2A4FF",
     ];
     return colors[Math.floor(Math.random() * colors.length)];
   };

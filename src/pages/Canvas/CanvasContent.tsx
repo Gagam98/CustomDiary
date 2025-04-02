@@ -40,6 +40,27 @@ const CanvasContent: FC<CanvasProps> = ({ handleUndo, canvasRef }) => {
           ctx.scale(dpr, dpr);
           ctx.lineCap = "round";
           ctx.lineJoin = "round";
+
+          // 모눈종이 그리기
+          const gridSize = 20; // 격자 크기
+          ctx.strokeStyle = "#e5e5e5"; // 연한 회색
+          ctx.lineWidth = 1;
+
+          // 가로선 그리기
+          for (let y = 0; y < height; y += gridSize) {
+            ctx.beginPath();
+            ctx.moveTo(0, y);
+            ctx.lineTo(width, y);
+            ctx.stroke();
+          }
+
+          // 세로선 그리기
+          for (let x = 0; x < width; x += gridSize) {
+            ctx.beginPath();
+            ctx.moveTo(x, 0);
+            ctx.lineTo(x, height);
+            ctx.stroke();
+          }
         }
       }
     };

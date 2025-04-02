@@ -27,13 +27,13 @@ const StickerPhysics: React.FC<StickerPhysicsProps> = ({ shapes }) => {
     engineRef.current = engine;
 
     // 중력 설정 강화
-    engine.world.gravity.y = 1;
+    engine.world.gravity.y = 2;
 
     // 벽 생성 - 위치 및 크기 조정
     const wallOptions = {
       isStatic: true,
       render: { visible: false },
-      restitution: 0.6, // 탄성 추가
+      restitution: 0.8, // 벽의 탄성 증가
     };
 
     const walls = [
@@ -99,7 +99,7 @@ const StickerPhysics: React.FC<StickerPhysicsProps> = ({ shapes }) => {
         const options = {
           restitution: 0.6,
           friction: 0.1,
-          density: 0.001,
+          density: 0.002,
         };
 
         switch (sticker.shape) {
