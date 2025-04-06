@@ -6,12 +6,18 @@ import Physics from "../../hooks/Physics";
 
 const Index = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const [activeSideTool, setActiveSideTool] = useState("glue");
+  const physicsCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const [activeSideTool, setActiveSideTool] = useState("");
   const [stickers, setStickers] = useState<Sticker[]>([]);
   const [photos, setPhotos] = useState<Photo[]>([]);
+  const [isGlueModeActive, setIsGlueModeActive] = useState(false);
 
   return (
-    <div className="w-full h-screen flex flex-col">
+    <div
+      className={`w-full h-screen flex flex-col ${
+        isGlueModeActive ? "cursor-grab" : ""
+      }`}
+    >
       {/* 상단 툴바 */}
       <TopToolbar
         setStickers={setStickers}
@@ -30,7 +36,18 @@ const Index = () => {
 
         <div className="flex-1 relative bg-white">
           <CanvasContent handleUndo={() => console.log("Undo 실행")} />
-          <Physics photos={photos} stickers={stickers} ref={canvasRef} />
+          <canvas
+            ref={canvasRef}
+            className="absolute top-0 left-0 w-full h-full"
+            style={{ zIndex: 15 }}
+          />
+          <Physics
+            photos={photos}
+            stickers={stickers}
+            ref={physicsCanvasRef}
+            activeSideTool={activeSideTool}
+            setGlueModeActive={setIsGlueModeActive}
+          />
         </div>
       </div>
     </div>

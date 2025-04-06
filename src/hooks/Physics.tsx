@@ -1,18 +1,26 @@
 import { useEffect, useRef, forwardRef, ForwardedRef } from "react";
 import Matter from "matter-js";
 import { Sticker, Photo } from "../pages/Canvas/TopToolbar";
+import GlueTool from "../pages/Canvas/SideTools/GlueTool";
 
 interface PhysicsProps {
   photos: Photo[];
   stickers: Sticker[];
+  activeSideTool: string;
+  setGlueModeActive: (active: boolean) => void;
 }
 
 const Physics = forwardRef<HTMLCanvasElement, PhysicsProps>(
-  ({ photos, stickers }, ref: ForwardedRef<HTMLCanvasElement>) => {
+  (
+    { photos, stickers, activeSideTool, setGlueModeActive },
+    ref: ForwardedRef<HTMLCanvasElement>
+  ) => {
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
     const engineRef = useRef<Matter.Engine | null>(null);
     const bodiesRef = useRef<{ [key: string]: Matter.Body }>({});
     const gridCanvasRef = useRef<HTMLCanvasElement>(null);
+    const selectedBodyRef = useRef<Matter.Body | null>(null);
+    const isDraggingRef = useRef(false);
 
     useEffect(() => {
       if (typeof ref === "function") {
@@ -347,6 +355,60 @@ const Physics = forwardRef<HTMLCanvasElement, PhysicsProps>(
       }
     }, []);
 
+    useEffect(() => {
+      if (!engineRef.current || !canvasRef.current) return;
+      const canvas = canvasRef.current;
+
+      const handleMouseDown = (e: MouseEvent) => {
+        if (activeSideTool !== "glue") return;
+
+        const mousePosition = {
+          x: e.clientX,
+          y: e.clientY,
+        };
+
+        const bodies = Matter.Composite.allBodies(engineRef.current!.world);
+        const clickedBody = bodies.find((body) => {
+          return Matter.Bounds.contains(body.bounds, mousePosition);
+        });
+
+        if (clickedBody) {
+          selectedBodyRef.current = clickedBody;
+          isDraggingRef.current = true;
+          Matter.Body.setStatic(clickedBody, true);
+          setGlueModeActive(true);
+        }
+      };
+
+      const handleMouseMove = (e: MouseEvent) => {
+        if (!isDraggingRef.current || !selectedBodyRef.current) return;
+
+        Matter.Body.setPosition(selectedBodyRef.current, {
+          x: e.clientX,
+          y: e.clientY,
+        });
+      };
+
+      const handleMouseUp = () => {
+        if (selectedBodyRef.current) {
+          Matter.Body.setStatic(selectedBodyRef.current, false);
+          selectedBodyRef.current = null;
+          isDraggingRef.current = false;
+          setGlueModeActive(false);
+        }
+      };
+
+      canvas.addEventListener("mousedown", handleMouseDown);
+      window.addEventListener("mousemove", handleMouseMove);
+      window.addEventListener("mouseup", handleMouseUp);
+
+      return () => {
+        canvas.removeEventListener("mousedown", handleMouseDown);
+        window.removeEventListener("mousemove", handleMouseMove);
+        window.removeEventListener("mouseup", handleMouseUp);
+      };
+    }, [activeSideTool, setGlueModeActive]);
+
     const renderStar = (
       ctx: CanvasRenderingContext2D,
       x: number,
@@ -387,7 +449,18 @@ const Physics = forwardRef<HTMLCanvasElement, PhysicsProps>(
         />
         <canvas
           ref={canvasRef}
-          className="absolute top-0 left-0 w-full h-full"
+          className={`absolute top-0 left-0 w-full h-full ${
+            activeSideTool === "glue"
+              ? "cursor-grab active:cursor-grabbing"
+              : ""
+          }`}
+          style={{ zIndex: activeSideTool === "glue" ? 20 : 10 }}
+        />
+        <GlueTool
+          isActive={activeSideTool === "glue"}
+          engineRef={engineRef}
+          canvasRef={canvasRef}
+          setGlueModeActive={setGlueModeActive}
         />
       </>
     );

@@ -1,6 +1,7 @@
 import { useState, useRef } from "react";
 import TopToolbar from "./TopToolbar";
 import Physics from "../../hooks/Physics";
+import Sidebar from "./SideToolbar";
 
 interface Sticker {
   id: string;
@@ -24,15 +25,35 @@ const Canvas: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [stickers, setStickers] = useState<Sticker[]>([]);
   const [photos, setPhotos] = useState<Photo[]>([]);
+  const [activeSideTool, setActiveSideTool] = useState("glue");
+  const [isGlueModeActive, setIsGlueModeActive] = useState(false);
 
   return (
-    <div className="relative w-full h-screen">
-      <TopToolbar
-        setStickers={setStickers}
-        setPhotos={setPhotos}
-        canvasRef={canvasRef}
-      />
-      <Physics photos={photos} stickers={stickers} ref={canvasRef} />
+    <div
+      className={`relative w-full h-screen flex ${
+        isGlueModeActive ? "cursor-grab" : ""
+      }`}
+    >
+      <div className="w-16 bg-white border-r">
+        <Sidebar
+          activeSideTool={activeSideTool}
+          setActiveSideTool={setActiveSideTool}
+        />
+      </div>
+      <div className="flex-1">
+        <TopToolbar
+          setStickers={setStickers}
+          setPhotos={setPhotos}
+          canvasRef={canvasRef}
+        />
+        <Physics
+          photos={photos}
+          stickers={stickers}
+          ref={canvasRef}
+          activeSideTool={activeSideTool}
+          setGlueModeActive={setIsGlueModeActive}
+        />
+      </div>
     </div>
   );
 };

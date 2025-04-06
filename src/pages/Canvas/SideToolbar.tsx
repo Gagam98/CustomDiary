@@ -9,16 +9,20 @@ const SideToolbar: React.FC<SideToolbarProps> = ({
   activeSideTool,
   setActiveSideTool,
 }) => {
+  const handleToolClick = (tool: string) => {
+    setActiveSideTool(activeSideTool === tool ? "" : tool);
+  };
+
   return (
     <div className="bg-white w-16 shadow-md border-r border-gray-200 flex flex-col justify-center items-center h-full z-10">
       <div className="flex flex-col gap-8">
         <div
           className={`w-12 h-12 flex items-center justify-center rounded-full cursor-pointer transition-all ${
             activeSideTool === "glue"
-              ? "bg-gray-200 shadow-md transform translate-x-1"
+              ? "bg-blue-200 shadow-md transform translate-x-1"
               : "hover:bg-gray-100"
           }`}
-          onClick={() => setActiveSideTool("glue")}
+          onClick={() => handleToolClick("glue")}
         >
           <FiTool size={22} />
         </div>
@@ -29,7 +33,7 @@ const SideToolbar: React.FC<SideToolbarProps> = ({
               ? "bg-gray-200 shadow-md transform translate-x-1"
               : "hover:bg-gray-100"
           }`}
-          onClick={() => setActiveSideTool("scissors")}
+          onClick={() => handleToolClick("scissors")}
         >
           <FiScissors size={22} />
         </div>
@@ -40,7 +44,7 @@ const SideToolbar: React.FC<SideToolbarProps> = ({
               ? "bg-gray-200 shadow-md transform translate-x-1"
               : "hover:bg-gray-100"
           }`}
-          onClick={() => setActiveSideTool("tape")}
+          onClick={() => handleToolClick("tape")}
         >
           <FiType size={22} />
         </div>

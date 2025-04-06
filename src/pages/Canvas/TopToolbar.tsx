@@ -9,11 +9,11 @@ import {
   Settings,
 } from "lucide-react";
 import { FiStar } from "react-icons/fi";
-import PenTool from "./tools/PenTool";
-import EraserTool from "./tools/EraserTool";
-import StickerTool from "./tools/StickerTool";
-import TextTool from "./tools/TextTool";
-import PhotoTool from "./tools/PhotoTool";
+import PenTool from "./TopTools/PenTool";
+import EraserTool from "./TopTools/EraserTool";
+import StickerTool from "./TopTools/StickerTool";
+import TextTool from "./TopTools/TextTool";
+import PhotoTool from "./TopTools/PhotoTool";
 
 export interface Sticker {
   id: string;
@@ -55,16 +55,53 @@ const TopToolbar: FC<TopToolbarProps> = ({
   const colorOptions = ["#FF0000", "#0000FF", "#000000", "#FFFFFF"];
   const photoToolRef = useRef<HTMLInputElement>(null);
 
-  // 캔버스 컨텍스트 초기화
+  // 캔버스 컨텍스트 초기화 - 이전 상태 유지하도록 수정
   useEffect(() => {
     if (!canvasRef.current) return;
-    const ctx = canvasRef.current.getContext("2d", { alpha: true });
+    const ctx = canvasRef.current.getContext("2d");
     if (ctx) {
+      // 캔버스 크기 설정
+      const container = canvasRef.current.parentElement;
+      if (!container) return;
+
+      const { width, height } = container.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+
+      // 현재 캔버스 내용 백업
+      const tempCanvas = document.createElement("canvas");
+      tempCanvas.width = canvasRef.current.width;
+      tempCanvas.height = canvasRef.current.height;
+      const tempCtx = tempCanvas.getContext("2d");
+      if (tempCtx) {
+        tempCtx.drawImage(canvasRef.current, 0, 0);
+      }
+
+      // 캔버스 크기 설정
+      canvasRef.current.width = width * dpr;
+      canvasRef.current.height = height * dpr;
+      canvasRef.current.style.width = `${width}px`;
+      canvasRef.current.style.height = `${height}px`;
+
+      // 컨텍스트 설정
+      ctx.scale(dpr, dpr);
       ctx.lineCap = "round";
       ctx.lineJoin = "round";
       ctxRef.current = ctx;
+
+      // 이전 내용 복원
+      if (tempCtx) {
+        ctx.drawImage(tempCanvas, 0, 0);
+      }
     }
   }, [canvasRef]);
+
+  // 색상/선 굵기 변경 시에도 이전 상태 유지
+  useEffect(() => {
+    if (ctxRef.current) {
+      ctxRef.current.strokeStyle = activeColor;
+      ctxRef.current.lineWidth = lineWidth;
+    }
+  }, [activeColor, lineWidth]);
 
   // 상태 저장 함수
   const saveCanvasState = () => {

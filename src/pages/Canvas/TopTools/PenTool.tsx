@@ -28,27 +28,23 @@ const PenTool: FC<PenToolProps> = ({
     const rect = canvas.getBoundingClientRect();
     const dpr = window.devicePixelRatio || 1;
 
-    const backupCtx = canvas.getContext("2d");
-    let prevImageData: ImageData | null = null;
-    if (backupCtx) {
-      try {
-        prevImageData = backupCtx.getImageData(
-          0,
-          0,
-          canvas.width,
-          canvas.height
-        );
-      } catch {
-        // Ignore error when getting image data
-      }
+    // 현재 캔버스 내용 백업
+    const tempCanvas = document.createElement("canvas");
+    tempCanvas.width = canvas.width;
+    tempCanvas.height = canvas.height;
+    const tempCtx = tempCanvas.getContext("2d");
+    if (tempCtx) {
+      tempCtx.drawImage(canvas, 0, 0);
     }
 
+    // 캔버스 크기 설정
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
     canvas.style.width = `${rect.width}px`;
     canvas.style.height = `${rect.height}px`;
 
     const ctx = canvas.getContext("2d", { alpha: true });
     if (ctx) {
-      ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.scale(dpr, dpr);
       ctx.lineCap = "round";
       ctx.lineJoin = "round";
@@ -58,17 +54,29 @@ const PenTool: FC<PenToolProps> = ({
       ctx.imageSmoothingQuality = "high";
       ctxRef.current = ctx;
 
-      if (prevImageData) {
-        ctx.putImageData(prevImageData, 0, 0);
+      // 이전 내용 복원
+      if (tempCtx) {
+        ctx.drawImage(tempCanvas, 0, 0);
       }
     }
   }, [canvasRef, activeColor, lineWidth, ctxRef]);
 
+  // resize 이벤트 핸들러 수정
   useEffect(() => {
-    setupCanvas();
-    const handleResize = () => setupCanvas();
+    const handleResize = () => {
+      if (!canvasRef.current || !ctxRef.current) return;
+      setupCanvas();
+    };
+
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
+  }, [setupCanvas]);
+
+  // 초기 설정은 한 번만 실행
+  useEffect(() => {
+    if (!ctxRef.current) {
+      setupCanvas();
+    }
   }, [setupCanvas]);
 
   useEffect(() => {
