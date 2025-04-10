@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import { FiStar } from "react-icons/fi";
 import { BsCircle, BsSquare, BsTriangle, BsHeart } from "react-icons/bs";
 import { stickerSvgs } from "../../../components/stickerSvgs";
+import { catStickers } from "../../../components/catStickers";
 
 interface StickerToolProps {
   setStickers: React.Dispatch<
@@ -29,9 +30,12 @@ const StickerTool: React.FC<StickerToolProps> = ({
 }) => {
   const [popupStyle, setPopupStyle] = useState<React.CSSProperties>({});
   const popupRef = useRef<HTMLDivElement | null>(null);
-  const [selectedCategory, setSelectedCategory] = useState<"shapes" | "basic">(
-    "shapes"
-  );
+  const [selectedCategory, setSelectedCategory] = useState<
+    "shapes" | "basic" | "cats"
+  >("shapes");
+
+  // useMemo 대신 useRef 사용
+  const catImageCache = useRef(new Map<string, HTMLImageElement>()).current;
 
   useEffect(() => {
     if (anchorRef.current) {
@@ -62,15 +66,35 @@ const StickerTool: React.FC<StickerToolProps> = ({
 
   const TOOLBAR_HEIGHT = 88;
 
+  // 컴포넌트 최상단에 이미지 프리로딩 추가
+  useEffect(() => {
+    // 고양이 스티커 이미지 사전 로드
+    catStickers.forEach((cat, index) => {
+      const img = new Image();
+      img.src = cat.src;
+      img.onload = () => {
+        catImageCache.set(`cat${index + 1}`, img);
+      };
+    });
+  }, []); // 의존성 배열 비워두기
+
   const selectSticker = (shape: string) => {
     if (!canvasRef.current) return;
     const rect = canvasRef.current.getBoundingClientRect();
+
+    // 스티커 크기와 물리 속성 최적화
+    const size = shape.startsWith("cat")
+      ? 80 // 고양이 스티커 크기 증가
+      : shape.startsWith("sticker")
+      ? 60
+      : (Math.random() * 20 + 40) * 1.5;
+
     const newSticker = {
       id: `sticker-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
       shape,
       x: Math.random() * (rect.width * 0.8) + rect.width * 0.1,
       y: TOOLBAR_HEIGHT + Math.random() * (rect.height - TOOLBAR_HEIGHT - 100),
-      size: (Math.random() * 20 + 40) * 1.5,
+      size,
       color: getRandomColor(),
     };
     setStickers((prev) => [...prev, newSticker]);
@@ -97,11 +121,11 @@ const StickerTool: React.FC<StickerToolProps> = ({
     { name: "triangle", icon: <BsTriangle size={20} /> },
     { name: "heart", icon: <BsHeart size={20} /> },
     { name: "star", icon: <FiStar size={20} /> },
-    ...Array.from({ length: 11 }, (_, i) => ({
+    ...stickerSvgs.map((sticker, i) => ({
       name: `sticker${i + 1}`,
       icon: (
         <img
-          src={stickerSvgs[i].src}
+          src={sticker.src}
           alt={`sticker${i + 1}`}
           width="20"
           height="20"
@@ -114,13 +138,27 @@ const StickerTool: React.FC<StickerToolProps> = ({
   const categories = [
     { id: "shapes", name: "도형" },
     { id: "basic", name: "기본 스티커" },
+    { id: "cats", name: "고양이 스티커" },
   ];
 
   const getStickersForCategory = () => {
-    if (selectedCategory === "shapes") {
-      return stickersList.slice(0, 5);
+    if (selectedCategory === "shapes") return stickersList.slice(0, 5);
+    if (selectedCategory === "basic") return stickersList.slice(5, 16);
+    if (selectedCategory === "cats") {
+      return catStickers.map((cat, i) => ({
+        name: `cat${i + 1}`,
+        icon: (
+          <img
+            src={cat.src}
+            alt={`cat${i + 1}`}
+            width="20"
+            height="20"
+            style={{ objectFit: "contain" }}
+          />
+        ),
+      }));
     }
-    return stickersList.slice(5);
+    return [];
   };
 
   return (
@@ -145,7 +183,7 @@ const StickerTool: React.FC<StickerToolProps> = ({
           <button
             key={category.id}
             onClick={() =>
-              setSelectedCategory(category.id as "shapes" | "basic")
+              setSelectedCategory(category.id as "shapes" | "basic" | "cats")
             }
             className={`px-4 py-2 rounded-full text-sm font-medium transition-colors
               ${

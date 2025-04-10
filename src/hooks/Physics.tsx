@@ -3,6 +3,7 @@ import Matter from "matter-js";
 import { Sticker, Photo } from "../pages/Canvas/TopToolbar";
 import GlueTool from "../pages/Canvas/SideTools/GlueTool";
 import { stickerSvgs } from "../components/stickerSvgs";
+import { catStickers } from "../components/catStickers";
 
 interface PhysicsProps {
   photos: Photo[];
@@ -25,6 +26,19 @@ const preloadStickerImage = (stickerSvg: {
     img.src = stickerSvg.src;
     return img;
   });
+};
+
+// 고양이 스티커를 위한 물리 속성 최적화
+const catStickerOptions = {
+  restitution: 0.6, // 탄성 감소
+  friction: 0.3, // 마찰 증가
+  density: 0.003, // 밀도 증가
+  frictionAir: 0.001,
+  collisionFilter: {
+    category: 0x0004,
+    mask: 0x0001 | 0x0002 | 0x0004,
+    group: 0,
+  },
 };
 
 const Physics = forwardRef<HTMLCanvasElement, PhysicsProps>(
@@ -142,6 +156,19 @@ const Physics = forwardRef<HTMLCanvasElement, PhysicsProps>(
           console.error(`Failed to load sticker image ${index + 1}:`, error);
         }
       });
+
+      // 고양이 스티커 이미지도 사전 로드 추가
+      catStickers.forEach(async (cat, index) => {
+        try {
+          const img = await preloadStickerImage(cat);
+          stickerImageCache.set(`cat${index + 1}`, img);
+        } catch (error) {
+          console.error(
+            `Failed to load cat sticker image ${index + 1}:`,
+            error
+          );
+        }
+      });
     }, []);
 
     useEffect(() => {
@@ -181,7 +208,7 @@ const Physics = forwardRef<HTMLCanvasElement, PhysicsProps>(
                 mask: 0x0001 | 0x0002 | 0x0004,
                 group: 0,
               },
-            }
+            } as Matter.IBodyDefinition & { chamfer: { radius: number } }
           );
 
           Matter.Body.setVelocity(body, {
@@ -197,18 +224,6 @@ const Physics = forwardRef<HTMLCanvasElement, PhysicsProps>(
       stickers.forEach((sticker) => {
         const bodyId = `sticker-${sticker.id}`;
         if (!bodiesRef.current[bodyId]) {
-          const options = {
-            restitution: 0.8,
-            friction: 0.1,
-            density: 0.001,
-            frictionAir: 0.001,
-            collisionFilter: {
-              category: 0x0004,
-              mask: 0x0001 | 0x0002 | 0x0004,
-              group: 0,
-            },
-          };
-
           let body;
           switch (sticker.shape) {
             case "circle":
@@ -216,7 +231,17 @@ const Physics = forwardRef<HTMLCanvasElement, PhysicsProps>(
                 sticker.x,
                 sticker.y,
                 sticker.size / 2,
-                options
+                {
+                  restitution: 0.8,
+                  friction: 0.1,
+                  density: 0.002,
+                  frictionAir: 0.001,
+                  collisionFilter: {
+                    category: 0x0002,
+                    mask: 0x0001 | 0x0002 | 0x0004,
+                    group: 0,
+                  },
+                }
               );
               break;
             case "square":
@@ -225,7 +250,18 @@ const Physics = forwardRef<HTMLCanvasElement, PhysicsProps>(
                 sticker.y,
                 sticker.size,
                 sticker.size,
-                options
+                {
+                  restitution: 0.8,
+                  friction: 0.1,
+                  density: 0.002,
+                  frictionAir: 0.001,
+                  chamfer: { radius: 5 },
+                  collisionFilter: {
+                    category: 0x0002,
+                    mask: 0x0001 | 0x0002 | 0x0004,
+                    group: 0,
+                  },
+                } as Matter.IBodyDefinition & { chamfer: { radius: number } }
               );
               break;
             case "triangle": {
@@ -238,7 +274,18 @@ const Physics = forwardRef<HTMLCanvasElement, PhysicsProps>(
                 sticker.x,
                 sticker.y,
                 [vertices],
-                options
+                {
+                  restitution: 0.8,
+                  friction: 0.1,
+                  density: 0.002,
+                  frictionAir: 0.001,
+                  chamfer: { radius: 5 },
+                  collisionFilter: {
+                    category: 0x0002,
+                    mask: 0x0001 | 0x0002 | 0x0004,
+                    group: 0,
+                  },
+                } as Matter.IBodyDefinition & { chamfer: { radius: number } }
               );
               break;
             }
@@ -253,13 +300,41 @@ const Physics = forwardRef<HTMLCanvasElement, PhysicsProps>(
             case "sticker9":
             case "sticker10":
             case "sticker11":
-              // base64 스티커들을 위한 사각형 물리 바디
               body = Matter.Bodies.rectangle(
                 sticker.x,
                 sticker.y,
                 sticker.size,
                 sticker.size,
-                options
+                {
+                  restitution: 0.8,
+                  friction: 0.1,
+                  density: 0.002,
+                  frictionAir: 0.001,
+                  chamfer: { radius: 5 },
+                  collisionFilter: {
+                    category: 0x0002,
+                    mask: 0x0001 | 0x0002 | 0x0004,
+                    group: 0,
+                  },
+                } as Matter.IBodyDefinition & { chamfer: { radius: number } }
+              );
+              break;
+            case "cat1":
+            case "cat2":
+            case "cat3":
+            case "cat4":
+            case "cat5":
+            case "cat6":
+            case "cat7":
+            case "cat8":
+            case "cat9":
+            case "cat10":
+              body = Matter.Bodies.rectangle(
+                sticker.x,
+                sticker.y,
+                sticker.size,
+                sticker.size * 1.2,
+                catStickerOptions
               );
               break;
             default:
@@ -267,7 +342,17 @@ const Physics = forwardRef<HTMLCanvasElement, PhysicsProps>(
                 sticker.x,
                 sticker.y,
                 sticker.size / 2,
-                options
+                {
+                  restitution: 0.8,
+                  friction: 0.1,
+                  density: 0.002,
+                  frictionAir: 0.001,
+                  collisionFilter: {
+                    category: 0x0002,
+                    mask: 0x0001 | 0x0002 | 0x0004,
+                    group: 0,
+                  },
+                }
               );
           }
 
@@ -318,8 +403,21 @@ const Physics = forwardRef<HTMLCanvasElement, PhysicsProps>(
             if (cachedImage && cachedImage.complete) {
               ctx.drawImage(cachedImage, -s / 2, -s / 2, s, s);
             }
+          } else if (sticker.shape.startsWith("cat")) {
+            const catIndex = parseInt(sticker.shape.replace("cat", "")) - 1;
+            const cat = catStickers[catIndex];
+            if (cat) {
+              const img = stickerImageCache.get(sticker.shape);
+              if (img && img.complete) {
+                const height = s * 1.2; // 고양이 스티커 비율 조정
+                ctx.drawImage(img, -s / 2, -height / 2, s, height);
+              } else {
+                // 이미지가 로드되지 않았을 때 임시 표시
+                ctx.fillStyle = sticker.color;
+                ctx.fillRect(-s / 2, -s / 2, s, s);
+              }
+            }
           } else {
-            // 기존 도형 스티커 렌더링
             ctx.fillStyle = sticker.color;
             switch (sticker.shape) {
               case "circle":
