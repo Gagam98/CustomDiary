@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { FiStar } from "react-icons/fi";
 import { BsCircle, BsSquare, BsTriangle, BsHeart } from "react-icons/bs";
+import { stickerSvgs } from "../../../components/stickerSvgs";
 
 interface StickerToolProps {
   setStickers: React.Dispatch<
@@ -28,6 +29,9 @@ const StickerTool: React.FC<StickerToolProps> = ({
 }) => {
   const [popupStyle, setPopupStyle] = useState<React.CSSProperties>({});
   const popupRef = useRef<HTMLDivElement | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<"shapes" | "basic">(
+    "shapes"
+  );
 
   useEffect(() => {
     if (anchorRef.current) {
@@ -93,19 +97,71 @@ const StickerTool: React.FC<StickerToolProps> = ({
     { name: "triangle", icon: <BsTriangle size={20} /> },
     { name: "heart", icon: <BsHeart size={20} /> },
     { name: "star", icon: <FiStar size={20} /> },
+    ...Array.from({ length: 11 }, (_, i) => ({
+      name: `sticker${i + 1}`,
+      icon: (
+        <img
+          src={stickerSvgs[i].src}
+          alt={`sticker${i + 1}`}
+          width="20"
+          height="20"
+          style={{ objectFit: "contain" }}
+        />
+      ),
+    })),
   ];
+
+  const categories = [
+    { id: "shapes", name: "도형" },
+    { id: "basic", name: "기본 스티커" },
+  ];
+
+  const getStickersForCategory = () => {
+    if (selectedCategory === "shapes") {
+      return stickersList.slice(0, 5);
+    }
+    return stickersList.slice(5);
+  };
 
   return (
     <div
       ref={popupRef}
       style={popupStyle}
-      className="bg-white shadow-lg rounded-md p-3"
+      className="bg-white shadow-lg rounded-md p-3 min-w-[280px]"
     >
-      <div className="text-center mb-2 text-gray-700 font-medium">
-        스티커 모양 선택
+      <div className="flex justify-between items-center mb-4 border-b pb-2">
+        <div className="text-gray-700 font-medium">스티커 선택</div>
+        <button
+          onClick={onRequestClose}
+          className="text-gray-500 hover:text-gray-700"
+        >
+          ✕
+        </button>
       </div>
-      <div className="grid grid-cols-3 gap-3">
-        {stickersList.map((sticker, index) => (
+
+      {/* 카테고리 선택 탭 */}
+      <div className="flex space-x-2 mb-4">
+        {categories.map((category) => (
+          <button
+            key={category.id}
+            onClick={() =>
+              setSelectedCategory(category.id as "shapes" | "basic")
+            }
+            className={`px-4 py-2 rounded-full text-sm font-medium transition-colors
+              ${
+                selectedCategory === category.id
+                  ? "bg-blue-100 text-blue-600"
+                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+              }`}
+          >
+            {category.name}
+          </button>
+        ))}
+      </div>
+
+      {/* 스티커 그리드 */}
+      <div className="grid grid-cols-4 gap-2">
+        {getStickersForCategory().map((sticker, index) => (
           <button
             key={`sticker-${index}`}
             className="w-12 h-12 border border-gray-300 rounded flex items-center justify-center hover:bg-blue-50"

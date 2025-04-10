@@ -14,6 +14,7 @@ import EraserTool from "./TopTools/EraserTool";
 import StickerTool from "./TopTools/StickerTool";
 import TextTool from "./TopTools/TextTool";
 import PhotoTool from "./TopTools/PhotoTool";
+import { useNavigate } from "react-router-dom";
 
 export interface Sticker {
   id: string;
@@ -37,13 +38,16 @@ interface TopToolbarProps {
   setStickers: React.Dispatch<React.SetStateAction<Sticker[]>>;
   setPhotos: React.Dispatch<React.SetStateAction<Photo[]>>;
   canvasRef: React.RefObject<HTMLCanvasElement | null>;
+  title: string;
 }
 
 const TopToolbar: FC<TopToolbarProps> = ({
   setStickers,
   setPhotos,
   canvasRef,
+  title,
 }) => {
+  const navigate = useNavigate();
   const [activeTool, setActiveTool] = useState<string>("pen");
   const [activeColor, setActiveColor] = useState<string>("#000000");
   const [eraserSize, setEraserSize] = useState<number>(10);
@@ -119,11 +123,11 @@ const TopToolbar: FC<TopToolbarProps> = ({
     <>
       <div className="w-full h-12 bg-gray-700 flex items-center px-4 justify-between">
         <div className="flex items-center">
-          <button className="text-white p-2">
+          <button className="text-white p-2" onClick={() => navigate("/")}>
             <ChevronLeft size={20} />
           </button>
-          <div className="text-white font-medium ml-4">test</div>
         </div>
+        <div className="text-white font-medium">{title}</div>
         <div className="flex items-center">
           <button className="text-white p-2">
             <Bookmark size={20} />

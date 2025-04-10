@@ -1,10 +1,13 @@
 import { useRef, useState } from "react";
+import { useLocation } from "react-router-dom";
 import TopToolbar, { Sticker, Photo } from "./TopToolbar";
 import CanvasContent from "./CanvasContent";
 import Sidebar from "./SideToolbar";
 import Physics from "../../hooks/Physics";
 
 const Index = () => {
+  const location = useLocation();
+  const title = location.state?.title || "Untitled";
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const physicsCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const [activeSideTool, setActiveSideTool] = useState("");
@@ -23,6 +26,7 @@ const Index = () => {
         setStickers={setStickers}
         setPhotos={setPhotos}
         canvasRef={canvasRef}
+        title={title}
       />
 
       {/* 사이드바 + 캔버스 영역 */}

@@ -1,4 +1,5 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 interface PopupProps {
   isOpen: boolean;
@@ -6,6 +7,9 @@ interface PopupProps {
 }
 
 const Popup = ({ isOpen, onClose }: PopupProps) => {
+  const navigate = useNavigate();
+  const [title, setTitle] = useState("");
+
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = "hidden";
@@ -34,12 +38,14 @@ const Popup = ({ isOpen, onClose }: PopupProps) => {
           </div>
           <div className="flex justify-between items-center">
             <span className="font-medium">종이</span>
-            <button className="px-3 py-1 bg-gray-200 rounded">백지</button>
+            <button className="px-3 py-1 bg-gray-200 rounded">모눈종이</button>
           </div>
           <input
             type="text"
             placeholder="제목을 입력하세요"
             className="w-full mt-2 px-3 py-2 border rounded"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
           />
         </div>
 
@@ -51,7 +57,13 @@ const Popup = ({ isOpen, onClose }: PopupProps) => {
           >
             취소
           </button>
-          <button className="px-4 py-2 bg-blue-500 text-white rounded">
+          <button
+            className="px-4 py-2 bg-blue-500 text-white rounded"
+            onClick={() => {
+              onClose();
+              navigate("/canvas", { state: { title } });
+            }}
+          >
             생성
           </button>
         </div>

@@ -2,6 +2,7 @@ import { useState, useRef } from "react";
 import TopToolbar from "./TopToolbar";
 import Physics from "../../hooks/Physics";
 import Sidebar from "./SideToolbar";
+import { useLocation } from "react-router-dom";
 
 interface Sticker {
   id: string;
@@ -27,6 +28,8 @@ const Canvas: React.FC = () => {
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [activeSideTool, setActiveSideTool] = useState("glue");
   const [isGlueModeActive, setIsGlueModeActive] = useState(false);
+  const location = useLocation();
+  const title = location.state?.title || "Untitled";
 
   return (
     <div
@@ -45,6 +48,7 @@ const Canvas: React.FC = () => {
           setStickers={setStickers}
           setPhotos={setPhotos}
           canvasRef={canvasRef}
+          title={title}
         />
         <Physics
           photos={photos}

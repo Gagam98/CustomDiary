@@ -2,6 +2,7 @@ import { useEffect, useRef, forwardRef, ForwardedRef } from "react";
 import Matter from "matter-js";
 import { Sticker, Photo } from "../pages/Canvas/TopToolbar";
 import GlueTool from "../pages/Canvas/SideTools/GlueTool";
+import { stickerSvgs } from "../components/stickerSvgs";
 
 interface PhysicsProps {
   photos: Photo[];
@@ -9,6 +10,22 @@ interface PhysicsProps {
   activeSideTool: string;
   setGlueModeActive: (active: boolean) => void;
 }
+
+// 스티커 이미지 캐시를 위한 Map 선언
+const stickerImageCache = new Map<string, HTMLImageElement>();
+
+// 스티커 이미지 사전 로드 함수
+const preloadStickerImage = (stickerSvg: {
+  src: string;
+}): Promise<HTMLImageElement> => {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = stickerSvg.src;
+    return img;
+  });
+};
 
 const Physics = forwardRef<HTMLCanvasElement, PhysicsProps>(
   (
@@ -33,6 +50,7 @@ const Physics = forwardRef<HTMLCanvasElement, PhysicsProps>(
     useEffect(() => {
       if (!canvasRef.current) return;
 
+      // Matter.js 엔진 초기화
       const engine = Matter.Engine.create({
         enableSleeping: false,
         constraintIterations: 4,
@@ -41,76 +59,67 @@ const Physics = forwardRef<HTMLCanvasElement, PhysicsProps>(
       });
       engineRef.current = engine;
 
+      // 중력 설정
       engine.world.gravity.y = 2;
 
-      const Categories = {
-        WALL: 0x0001,
-        PHOTO: 0x0002,
-        STICKER: 0x0004,
-      };
-
+      // 벽 생성 - 위치 및 크기 조정
       const wallOptions = {
         isStatic: true,
         render: { visible: false },
-        restitution: 0.8,
-        friction: 0.2,
+        restitution: 0.5,
+        friction: 0.3,
+        density: 1,
         collisionFilter: {
-          category: Categories.WALL,
-          mask: Categories.PHOTO | Categories.STICKER,
+          category: 0x0001,
         },
       };
 
+      // 화면 크기 가져오기
+      const container = canvasRef.current.parentElement;
+      if (!container) return;
+      const { width, height } = container.getBoundingClientRect();
+
       const walls = [
+        // 바닥
         Matter.Bodies.rectangle(
-          window.innerWidth / 2,
-          window.innerHeight,
-          window.innerWidth,
+          width / 2,
+          height + 60, // 바닥을 약간 아래로 내림
+          width * 2, // 너비를 더 넓게
           60,
           wallOptions
         ),
+        // 왼쪽 벽
         Matter.Bodies.rectangle(
-          0,
-          window.innerHeight / 2,
+          -30, // 왼쪽 벽을 약간 바깥으로
+          height / 2,
           60,
-          window.innerHeight * 2,
+          height * 2,
           wallOptions
         ),
+        // 오른쪽 벽
         Matter.Bodies.rectangle(
-          window.innerWidth,
-          window.innerHeight / 2,
+          width + 30, // 오른쪽 벽을 약간 바깥으로
+          height / 2,
           60,
-          window.innerHeight * 2,
+          height * 2,
           wallOptions
         ),
       ];
 
       Matter.World.add(engine.world, walls);
 
-      Matter.Events.on(engine, "collisionStart", (event) => {
-        event.pairs.forEach((pair) => {
-          const bodyA = pair.bodyA;
-          const bodyB = pair.bodyB;
-
-          const force = 0.005;
-          const velocityMultiplier = 1 + force;
-
-          Matter.Body.setVelocity(bodyA, {
-            x: bodyA.velocity.x * velocityMultiplier,
-            y: bodyA.velocity.y * velocityMultiplier,
-          });
-          Matter.Body.setVelocity(bodyB, {
-            x: bodyB.velocity.x * velocityMultiplier,
-            y: bodyB.velocity.y * velocityMultiplier,
-          });
-
-          Matter.Body.setAngularVelocity(
-            bodyA,
-            bodyA.angularVelocity * velocityMultiplier
-          );
-          Matter.Body.setAngularVelocity(
-            bodyB,
-            bodyB.angularVelocity * velocityMultiplier
-          );
+      // 충돌 필터링 설정
+      Matter.Events.on(engine, "beforeUpdate", () => {
+        const bodies = Matter.Composite.allBodies(engine.world);
+        bodies.forEach((body) => {
+          if (body.position.y > height + 1000) {
+            // 너무 멀리 떨어진 객체를 다시 위로 올림
+            Matter.Body.setPosition(body, {
+              x: body.position.x,
+              y: 0,
+            });
+            Matter.Body.setVelocity(body, { x: 0, y: 0 });
+          }
         });
       });
 
@@ -118,10 +127,21 @@ const Physics = forwardRef<HTMLCanvasElement, PhysicsProps>(
       Matter.Runner.run(runner, engine);
 
       return () => {
-        Matter.Events.off(engine, "collisionStart");
         Matter.Runner.stop(runner);
         Matter.Engine.clear(engine);
       };
+    }, []);
+
+    useEffect(() => {
+      // 스티커 이미지 사전 로드
+      stickerSvgs.forEach(async (svg, index) => {
+        try {
+          const img = await preloadStickerImage(svg);
+          stickerImageCache.set(`sticker${index + 1}`, img);
+        } catch (error) {
+          console.error(`Failed to load sticker image ${index + 1}:`, error);
+        }
+      });
     }, []);
 
     useEffect(() => {
@@ -222,6 +242,26 @@ const Physics = forwardRef<HTMLCanvasElement, PhysicsProps>(
               );
               break;
             }
+            case "sticker1":
+            case "sticker2":
+            case "sticker3":
+            case "sticker4":
+            case "sticker5":
+            case "sticker6":
+            case "sticker7":
+            case "sticker8":
+            case "sticker9":
+            case "sticker10":
+            case "sticker11":
+              // base64 스티커들을 위한 사각형 물리 바디
+              body = Matter.Bodies.rectangle(
+                sticker.x,
+                sticker.y,
+                sticker.size,
+                sticker.size,
+                options
+              );
+              break;
             default:
               body = Matter.Bodies.circle(
                 sticker.x,
@@ -269,39 +309,47 @@ const Physics = forwardRef<HTMLCanvasElement, PhysicsProps>(
           if (!body) return;
 
           ctx.save();
-          ctx.fillStyle = sticker.color;
           ctx.translate(body.position.x, body.position.y);
           ctx.rotate(body.angle);
 
           const s = sticker.size;
-          switch (sticker.shape) {
-            case "circle":
-              ctx.beginPath();
-              ctx.arc(0, 0, s / 2, 0, 2 * Math.PI);
-              ctx.fill();
-              break;
-            case "square":
-              ctx.fillRect(-s / 2, -s / 2, s, s);
-              break;
-            case "triangle":
-              ctx.beginPath();
-              ctx.moveTo(0, -s / 2);
-              ctx.lineTo(s / 2, s / 2);
-              ctx.lineTo(-s / 2, s / 2);
-              ctx.closePath();
-              ctx.fill();
-              break;
-            case "heart":
-              ctx.beginPath();
-              ctx.moveTo(0, -s / 4);
-              ctx.bezierCurveTo(s / 2, -s / 2, s / 2, s / 4, 0, s / 2);
-              ctx.bezierCurveTo(-s / 2, s / 4, -s / 2, -s / 2, 0, -s / 4);
-              ctx.closePath();
-              ctx.fill();
-              break;
-            case "star":
-              renderStar(ctx, 0, 0, 5, s / 2, s / 4);
-              break;
+          if (sticker.shape.startsWith("sticker")) {
+            const cachedImage = stickerImageCache.get(sticker.shape);
+            if (cachedImage && cachedImage.complete) {
+              ctx.drawImage(cachedImage, -s / 2, -s / 2, s, s);
+            }
+          } else {
+            // 기존 도형 스티커 렌더링
+            ctx.fillStyle = sticker.color;
+            switch (sticker.shape) {
+              case "circle":
+                ctx.beginPath();
+                ctx.arc(0, 0, s / 2, 0, 2 * Math.PI);
+                ctx.fill();
+                break;
+              case "square":
+                ctx.fillRect(-s / 2, -s / 2, s, s);
+                break;
+              case "triangle":
+                ctx.beginPath();
+                ctx.moveTo(0, -s / 2);
+                ctx.lineTo(s / 2, s / 2);
+                ctx.lineTo(-s / 2, s / 2);
+                ctx.closePath();
+                ctx.fill();
+                break;
+              case "heart":
+                ctx.beginPath();
+                ctx.moveTo(0, -s / 4);
+                ctx.bezierCurveTo(s / 2, -s / 2, s / 2, s / 4, 0, s / 2);
+                ctx.bezierCurveTo(-s / 2, s / 4, -s / 2, -s / 2, 0, -s / 4);
+                ctx.closePath();
+                ctx.fill();
+                break;
+              case "star":
+                renderStar(ctx, 0, 0, 5, s / 2, s / 4);
+                break;
+            }
           }
           ctx.restore();
         });

@@ -12,8 +12,8 @@ import {
 
 export default function GoodNotesUI() {
   const [isPopupOpen, setIsPopupOpen] = useState(false); // 팝업 상태 추가
-
-  const documents = [
+  const [sortBy, setSortBy] = useState("date"); // 정렬 상태 추가
+  const [documents, setDocuments] = useState([
     {
       name: "Test01",
       type: "folder",
@@ -42,7 +42,7 @@ export default function GoodNotesUI() {
       name: "Test03",
       type: "folder",
       date: "2022. 6. 26. 오전 9:33",
-      starred: true,
+      starred: false,
     },
     {
       name: "Test04",
@@ -54,7 +54,7 @@ export default function GoodNotesUI() {
       name: "계획표",
       type: "folder",
       date: "2022. 4. 28. 오후 7:56",
-      starred: true,
+      starred: false,
     },
     {
       name: "독서노트",
@@ -62,7 +62,33 @@ export default function GoodNotesUI() {
       date: "2022. 4. 28. 오후 7:52",
       starred: true,
     },
-  ];
+  ]);
+
+  // 별표 토글 함수 추가
+  const toggleStar = (index: number) => {
+    setDocuments(
+      documents.map((doc, i) =>
+        i === index ? { ...doc, starred: !doc.starred } : doc
+      )
+    );
+  };
+
+  // 정렬된 documents 계산
+  const sortedDocuments = [...documents].sort((a, b) => {
+    if (sortBy === "date") {
+      return new Date(b.date).getTime() - new Date(a.date).getTime();
+    } else if (sortBy === "name") {
+      return a.name.localeCompare(b.name);
+    } else if (sortBy === "type") {
+      // starred가 true인 항목을 먼저 정렬
+      if (a.starred !== b.starred) {
+        return a.starred ? -1 : 1;
+      }
+      // starred가 같은 경우 이름으로 정렬
+      return a.name.localeCompare(b.name);
+    }
+    return 0;
+  });
 
   return (
     <div className="flex h-screen bg-gray-50">
@@ -101,11 +127,36 @@ export default function GoodNotesUI() {
           <h1 className="text-lg font-medium">문서</h1>
           <div className="flex items-center space-x-1">
             <div className="bg-gray-100 rounded-md flex mr-2">
-              <button className="px-3 py-1 text-xs font-medium bg-white rounded-md border border-gray-200 shadow-sm">
+              <button
+                className={`px-3 py-1 text-xs font-medium ${
+                  sortBy === "date"
+                    ? "bg-white rounded-md border border-gray-200 shadow-sm"
+                    : ""
+                }`}
+                onClick={() => setSortBy("date")}
+              >
                 날짜
               </button>
-              <button className="px-3 py-1 text-xs font-medium">이름</button>
-              <button className="px-3 py-1 text-xs font-medium">유형</button>
+              <button
+                className={`px-3 py-1 text-xs font-medium ${
+                  sortBy === "name"
+                    ? "bg-white rounded-md border border-gray-200 shadow-sm"
+                    : ""
+                }`}
+                onClick={() => setSortBy("name")}
+              >
+                이름
+              </button>
+              <button
+                className={`px-3 py-1 text-xs font-medium ${
+                  sortBy === "type"
+                    ? "bg-white rounded-md border border-gray-200 shadow-sm"
+                    : ""
+                }`}
+                onClick={() => setSortBy("type")}
+              >
+                유형
+              </button>
             </div>
             <button className="p-1.5 rounded-full hover:bg-gray-100">
               <MoreVertical size={18} className="text-gray-500" />
@@ -134,26 +185,48 @@ export default function GoodNotesUI() {
             </div>
 
             {/* Document Items */}
-            {documents.map((doc, index) => (
+            {sortedDocuments.map((doc, index) => (
               <div key={index} className="flex flex-col h-36 relative">
                 {doc.type === "folder" ? (
                   <div className="flex flex-col items-center justify-center h-full pb-4 bg-blue-100 rounded-md">
-                    {doc.starred && (
-                      <div className="absolute top-1 right-1">
-                        <Star size={16} className="text-red-500 fill-red-500" />
-                      </div>
-                    )}
+                    <div className="absolute top-1 right-1">
+                      <Star
+                        size={16}
+                        className={`cursor-pointer ${
+                          doc.starred
+                            ? "text-red-500 fill-red-500"
+                            : "text-gray-300"
+                        }`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleStar(
+                            documents.findIndex((d) => d.name === doc.name)
+                          );
+                        }}
+                      />
+                    </div>
                   </div>
                 ) : (
                   <div className="flex flex-col items-center justify-center h-full pb-4 bg-white border border-gray-200 rounded-md">
                     <div className="text-xs text-center px-2 py-1 border-b border-gray-200 w-full text-gray-600 mb-4">
                       MY JOURNAL
                     </div>
-                    {doc.starred && (
-                      <div className="absolute top-1 right-1">
-                        <Star size={16} className="text-gray-300" />
-                      </div>
-                    )}
+                    <div className="absolute top-1 right-1">
+                      <Star
+                        size={16}
+                        className={`cursor-pointer ${
+                          doc.starred
+                            ? "text-red-500 fill-red-500"
+                            : "text-gray-300"
+                        }`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleStar(
+                            documents.findIndex((d) => d.name === doc.name)
+                          );
+                        }}
+                      />
+                    </div>
                   </div>
                 )}
                 <div className="mt-1 text-center">
