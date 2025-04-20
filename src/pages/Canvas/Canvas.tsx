@@ -3,6 +3,7 @@ import TopToolbar from "./TopToolbar";
 import Physics from "../../hooks/Physics";
 import Sidebar from "./SideToolbar";
 import { useLocation } from "react-router-dom";
+import Matter from "matter-js";
 
 interface Sticker {
   id: string;
@@ -24,6 +25,7 @@ interface Photo {
 
 const Canvas: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const engineRef = useRef<Matter.Engine | null>(null);
   const [stickers, setStickers] = useState<Sticker[]>([]);
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [activeSideTool, setActiveSideTool] = useState("glue");
@@ -45,6 +47,7 @@ const Canvas: React.FC = () => {
           setPhotos={setPhotos}
           canvasRef={canvasRef}
           title={title}
+          engineRef={engineRef}
         />
         <Physics
           photos={photos}

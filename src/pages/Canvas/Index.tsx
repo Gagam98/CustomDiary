@@ -4,12 +4,14 @@ import TopToolbar, { Sticker, Photo } from "./TopToolbar";
 import CanvasContent from "./CanvasContent";
 import Sidebar from "./SideToolbar";
 import Physics from "../../hooks/Physics";
+import Matter from "matter-js";
 
 const Index = () => {
   const location = useLocation();
   const title = location.state?.title || "Untitled";
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const physicsCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const engineRef = useRef<Matter.Engine | null>(null);
   const [activeSideTool, setActiveSideTool] = useState("");
   const [stickers, setStickers] = useState<Sticker[]>([]);
   const [photos, setPhotos] = useState<Photo[]>([]);
@@ -27,6 +29,7 @@ const Index = () => {
         setPhotos={setPhotos}
         canvasRef={canvasRef}
         title={title}
+        engineRef={engineRef}
       />
 
       {/* 사이드바 + 캔버스 영역 */}
