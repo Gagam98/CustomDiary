@@ -1,63 +1,26 @@
-import { useState } from "react";
 import { Star } from "lucide-react";
 import Popup from "./Popup";
+import { useState } from "react";
+
+interface Document {
+  name: string;
+  type: string;
+  date: string;
+  starred: boolean;
+}
 
 interface DocumentsSectionProps {
+  documents: Document[];
+  setDocuments: React.Dispatch<React.SetStateAction<Document[]>>;
   sortBy: string;
 }
 
-export default function DocumentsSection({ sortBy }: DocumentsSectionProps) {
+export default function DocumentsSection({
+  documents,
+  setDocuments,
+  sortBy,
+}: DocumentsSectionProps) {
   const [isPopupOpen, setIsPopupOpen] = useState(false);
-  const [documents, setDocuments] = useState([
-    {
-      name: "Test01",
-      type: "folder",
-      date: "2023. 3. 23. 오후 6:00",
-      starred: true,
-    },
-    {
-      name: "GoodNoteStickers",
-      type: "folder",
-      date: "2023. 6. 30. 오전 9:32",
-      starred: true,
-    },
-    {
-      name: "2024_Plantify_diary_Monday",
-      type: "file",
-      date: "2023. 11. 15. 오전 11:56",
-      starred: false,
-    },
-    {
-      name: "Test02",
-      type: "folder",
-      date: "2022. 6. 20. 오전 9:34",
-      starred: true,
-    },
-    {
-      name: "Test03",
-      type: "folder",
-      date: "2022. 6. 26. 오전 9:33",
-      starred: false,
-    },
-    {
-      name: "Test04",
-      type: "folder",
-      date: "2022. 6. 26. 오전 9:32",
-      starred: true,
-    },
-    {
-      name: "계획표",
-      type: "folder",
-      date: "2022. 4. 28. 오후 7:56",
-      starred: false,
-    },
-    {
-      name: "독서노트",
-      type: "folder",
-      date: "2022. 4. 28. 오후 7:52",
-      starred: true,
-    },
-  ]);
 
   // 별표 토글 함수
   const toggleStar = (index: number) => {
@@ -73,11 +36,6 @@ export default function DocumentsSection({ sortBy }: DocumentsSectionProps) {
     if (sortBy === "date") {
       return new Date(b.date).getTime() - new Date(a.date).getTime();
     } else if (sortBy === "name") {
-      return a.name.localeCompare(b.name);
-    } else if (sortBy === "type") {
-      if (a.starred !== b.starred) {
-        return a.starred ? -1 : 1;
-      }
       return a.name.localeCompare(b.name);
     }
     return 0;
@@ -110,12 +68,7 @@ export default function DocumentsSection({ sortBy }: DocumentsSectionProps) {
                         ? "text-red-500 fill-red-500"
                         : "text-gray-300"
                     }`}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      toggleStar(
-                        documents.findIndex((d) => d.name === doc.name)
-                      );
-                    }}
+                    onClick={() => toggleStar(index)}
                   />
                 </div>
               </div>
@@ -132,12 +85,7 @@ export default function DocumentsSection({ sortBy }: DocumentsSectionProps) {
                         ? "text-red-500 fill-red-500"
                         : "text-gray-300"
                     }`}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      toggleStar(
-                        documents.findIndex((d) => d.name === doc.name)
-                      );
-                    }}
+                    onClick={() => toggleStar(index)}
                   />
                 </div>
               </div>
