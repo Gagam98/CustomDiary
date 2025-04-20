@@ -1,4 +1,5 @@
 import { useState, ChangeEvent, FC, useRef, useEffect } from "react";
+import Matter from "matter-js";
 import {
   ChevronLeft,
   Bookmark,
@@ -39,6 +40,7 @@ interface TopToolbarProps {
   setPhotos: React.Dispatch<React.SetStateAction<Photo[]>>;
   canvasRef: React.RefObject<HTMLCanvasElement | null>;
   title: string;
+  engineRef: React.RefObject<Matter.Engine | null>;
 }
 
 const TopToolbar: FC<TopToolbarProps> = ({
@@ -46,6 +48,7 @@ const TopToolbar: FC<TopToolbarProps> = ({
   setPhotos,
   canvasRef,
   title,
+  engineRef,
 }) => {
   const navigate = useNavigate();
   const [activeTool, setActiveTool] = useState<string>("pen");
@@ -246,6 +249,7 @@ const TopToolbar: FC<TopToolbarProps> = ({
           setHistory={setHistory}
           ctxRef={ctxRef}
           saveCanvasState={saveCanvasState}
+          engineRef={engineRef}
         />
       )}
       {activeTool === "eraser" && (
