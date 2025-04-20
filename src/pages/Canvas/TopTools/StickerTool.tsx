@@ -161,6 +161,40 @@ const StickerTool: React.FC<StickerToolProps> = ({
     return [];
   };
 
+  const addAllStickers = () => {
+    if (!canvasRef.current) return;
+    const rect = canvasRef.current.getBoundingClientRect();
+    const currentStickers = getStickersForCategory();
+
+    // 현재 선택된 카테고리의 모든 스티커를 순차적으로 추가
+    currentStickers.forEach((sticker, index) => {
+      const size = sticker.name.startsWith("cat")
+        ? 80
+        : sticker.name.startsWith("sticker")
+        ? 60
+        : (Math.random() * 10 + 25) * 1.5;
+
+      // 스티커들을 격자 형태로 배치
+      const columns = 4;
+      const spacing = 100;
+      const column = index % columns;
+      const row = Math.floor(index / columns);
+
+      const newSticker = {
+        id: `sticker-${Date.now()}-${Math.random()
+          .toString(36)
+          .substring(2, 9)}`,
+        shape: sticker.name,
+        x: rect.width * 0.3 + column * spacing,
+        y: TOOLBAR_HEIGHT + 100 + row * spacing,
+        size,
+        color: getRandomColor(),
+      };
+      setStickers((prev) => [...prev, newSticker]);
+    });
+    onRequestClose();
+  };
+
   return (
     <div
       ref={popupRef}
@@ -198,7 +232,7 @@ const StickerTool: React.FC<StickerToolProps> = ({
       </div>
 
       {/* 스티커 그리드 */}
-      <div className="grid grid-cols-4 gap-2">
+      <div className="grid grid-cols-4 gap-2 mb-4">
         {getStickersForCategory().map((sticker, index) => (
           <button
             key={`sticker-${index}`}
@@ -208,6 +242,20 @@ const StickerTool: React.FC<StickerToolProps> = ({
             {sticker.icon}
           </button>
         ))}
+      </div>
+
+      {/* All 버튼을 하단으로 이동 */}
+      <div>
+        <button
+          onClick={addAllStickers}
+          className="w-full py-2 bg-gray-50 text-gray-600 border border-gray-200 rounded-md hover:bg-gray-100 transition-colors text-sm"
+        >
+          {selectedCategory === "shapes"
+            ? "모든 도형 추가"
+            : selectedCategory === "basic"
+            ? "모든 기본 스티커 추가"
+            : "모든 고양이 스티커 추가"}
+        </button>
       </div>
     </div>
   );

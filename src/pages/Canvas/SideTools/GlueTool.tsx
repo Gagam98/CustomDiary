@@ -99,13 +99,43 @@ const GlueTool: FC<GlueToolProps> = ({
         selectedBody = clickedBody;
         isDragging = true;
         Matter.Body.setStatic(clickedBody, true);
+
+        // z-index 조정: 펜 stroke는 항상 최상단에 유지
+        const world = engineRef.current!.world;
+        const bodies = Matter.Composite.allBodies(world);
+
+        // 펜 stroke를 제외한 나머지 bodies만 정렬
+        const nonPenBodies = bodies.filter(
+          (body) => !body.label?.startsWith("pen-stroke")
+        );
+        const penBodies = bodies.filter((body) =>
+          body.label?.startsWith("pen-stroke")
+        );
+
+        // 선택된 body를 nonPenBodies의 맨 뒤로 이동
+        Matter.Composite.clear(world, false);
+        nonPenBodies.forEach((body) => {
+          if (body.id === clickedBody.id) {
+            Matter.Composite.add(world, body);
+          }
+        });
+        // 나머지 nonPenBodies 추가
+        nonPenBodies.forEach((body) => {
+          if (body.id !== clickedBody.id) {
+            Matter.Composite.add(world, body);
+          }
+        });
+        // 펜 stroke를 맨 마지막에 추가하여 항상 최상단에 유지
+        penBodies.forEach((body) => {
+          Matter.Composite.add(world, body);
+        });
+
         setGlueModeActive(true);
 
         if (canvasRef.current) {
           canvasRef.current.style.cursor = "grabbing";
         }
 
-        // 이벤트 전파 중단
         e.stopPropagation();
       }
     };

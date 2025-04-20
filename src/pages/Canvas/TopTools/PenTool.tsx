@@ -1,4 +1,5 @@
 import { FC, useEffect, useCallback, RefObject, useRef } from "react";
+import Matter from "matter-js";
 
 interface PenToolProps {
   activeTool: string;
@@ -9,6 +10,12 @@ interface PenToolProps {
   setHistory: (history: ImageData[]) => void;
   ctxRef: RefObject<CanvasRenderingContext2D | null>;
   saveCanvasState: () => void;
+  engineRef: RefObject<Matter.Engine | null>;
+}
+
+interface Point {
+  x: number;
+  y: number;
 }
 
 const PenTool: FC<PenToolProps> = ({
@@ -19,8 +26,10 @@ const PenTool: FC<PenToolProps> = ({
   history,
   setHistory,
   ctxRef,
+  engineRef,
 }) => {
   const isDrawing = useRef(false);
+  const currentStrokePoints = useRef<Point[]>([]);
 
   const setupCanvas = useCallback(() => {
     if (!canvasRef.current) return;
@@ -125,8 +134,9 @@ const PenTool: FC<PenToolProps> = ({
   const handleMouseMove = useCallback(
     (event: MouseEvent) => {
       if (!isDrawing.current || !ctxRef.current) return;
-      const { x, y } = getMousePosition(event);
-      ctxRef.current.lineTo(x, y);
+      const point = getMousePosition(event);
+      currentStrokePoints.current.push(point);
+      ctxRef.current.lineTo(point.x, point.y);
       ctxRef.current.stroke();
     },
     [getMousePosition, ctxRef]
@@ -136,6 +146,8 @@ const PenTool: FC<PenToolProps> = ({
     if (!ctxRef.current) return;
     ctxRef.current.closePath();
     isDrawing.current = false;
+    createStroke(currentStrokePoints.current);
+    currentStrokePoints.current = [];
   }, [ctxRef]);
 
   useEffect(() => {
@@ -152,6 +164,31 @@ const PenTool: FC<PenToolProps> = ({
       canvas.removeEventListener("mouseleave", handleMouseUp);
     };
   }, [handleMouseDown, handleMouseMove, handleMouseUp, canvasRef]);
+
+  const createStroke = (points: Point[]) => {
+    if (points.length < 2) return;
+
+    const vertices = points.map((p) => Matter.Vector.create(p.x, p.y));
+    const body = Matter.Bodies.fromVertices(
+      points[0].x,
+      points[0].y,
+      [vertices],
+      {
+        isStatic: false,
+        render: {
+          fillStyle: activeColor,
+          strokeStyle: activeColor,
+          lineWidth: lineWidth,
+        },
+        label: `pen-stroke-${Date.now()}`,
+        friction: 0.3,
+        frictionAir: 0.00001,
+        restitution: 0.8,
+      }
+    );
+
+    Matter.Composite.add(engineRef.current!.world, body);
+  };
 
   return null;
 };
