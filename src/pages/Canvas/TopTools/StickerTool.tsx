@@ -84,10 +84,10 @@ const StickerTool: React.FC<StickerToolProps> = ({
 
     // 스티커 크기와 물리 속성 최적화
     const size = shape.startsWith("cat")
-      ? 80 // 고양이 스티커 크기 증가
+      ? 80 // 고양이 스티커 크기
       : shape.startsWith("sticker")
-      ? 60
-      : (Math.random() * 20 + 40) * 1.5;
+      ? 60 // 기본 스티커 크기
+      : Math.random() * 20 + 40; // 도형 스티커 크기 감소 (기존: 40~60 -> 변경: 25~35)
 
     const newSticker = {
       id: `sticker-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,

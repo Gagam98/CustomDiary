@@ -32,18 +32,14 @@ const Canvas: React.FC = () => {
   const title = location.state?.title || "Untitled";
 
   return (
-    <div
-      className={`relative w-full h-screen flex ${
-        isGlueModeActive ? "cursor-grab" : ""
-      }`}
-    >
-      <div className="w-16 bg-white border-r">
+    <div className="relative w-full h-screen">
+      <div className="absolute left-0 top-0 w-16 z-50">
         <Sidebar
           activeSideTool={activeSideTool}
           setActiveSideTool={setActiveSideTool}
         />
       </div>
-      <div className="flex-1">
+      <div className={`w-full h-full ${isGlueModeActive ? "cursor-grab" : ""}`}>
         <TopToolbar
           setStickers={setStickers}
           setPhotos={setPhotos}

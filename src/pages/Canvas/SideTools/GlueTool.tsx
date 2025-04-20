@@ -145,6 +145,10 @@ const GlueTool: FC<GlueToolProps> = ({
           isDragging = false;
           setGlueModeActive(false);
         }
+
+        // 이벤트 전파 중단
+        e.stopPropagation();
+        e.preventDefault();
       }
     };
 
