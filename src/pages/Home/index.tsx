@@ -70,7 +70,6 @@ export default function Home() {
   return (
     <div className="flex h-screen bg-gray-50">
       <Sidebar
-        onSearch={handleSearch}
         onNavigate={(section) =>
           navigate(section === "documents" ? "/" : `/${section}`)
         }
@@ -152,7 +151,7 @@ export default function Home() {
             sortBy={sortBy}
           />
         ) : location.pathname === "/favorites" ? (
-          <FavoritesSection documents={documents} />
+          <FavoritesSection documents={documents} setDocuments={setDocuments} />
         ) : (
           <SharedSection documents={documents} searchTerm={searchTerm} />
         )}
