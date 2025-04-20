@@ -1,4 +1,4 @@
-import { FiScissors, FiTool, FiType } from "react-icons/fi";
+import { encodedSvgs } from "../../components/encodedSvgs";
 
 interface SideToolbarProps {
   activeSideTool: string;
@@ -9,46 +9,36 @@ const SideToolbar: React.FC<SideToolbarProps> = ({
   activeSideTool,
   setActiveSideTool,
 }) => {
+  const tools = [
+    { id: "glue", image: encodedSvgs.glue, alt: "glue" },
+    { id: "ruler", image: encodedSvgs.ruler, alt: "ruler" },
+    { id: "tape", image: encodedSvgs.tape, alt: "tape" },
+  ];
+
   const handleToolClick = (tool: string) => {
-    setActiveSideTool(activeSideTool === tool ? "" : tool);
+    setActiveSideTool(tool === activeSideTool ? "" : tool);
   };
 
   return (
-    <div className="bg-white w-16 shadow-md border-r border-gray-200 flex flex-col justify-center items-center h-full z-10">
-      <div className="flex flex-col gap-8">
-        <div
-          className={`w-12 h-12 flex items-center justify-center rounded-full cursor-pointer transition-all ${
-            activeSideTool === "glue"
-              ? "bg-blue-200 shadow-md transform translate-x-1"
-              : "hover:bg-gray-100"
-          }`}
-          onClick={() => handleToolClick("glue")}
+    <div className="fixed left-0 top-1/2 -translate-y-1/2 flex flex-col gap-4 -translate-x-4">
+      {tools.map((tool) => (
+        <button
+          key={tool.id}
+          onClick={() => handleToolClick(tool.id)}
+          className={`w-20 h-20 transition-all duration-300 ease-in-out flex items-center justify-center bg-white rounded-lg
+            ${
+              activeSideTool === tool.id
+                ? "translate-x-8 scale-110"
+                : "translate-x-4 hover:translate-x-6"
+            }`}
         >
-          <FiTool size={22} />
-        </div>
-
-        <div
-          className={`w-12 h-12 flex items-center justify-center rounded-full cursor-pointer transition-all ${
-            activeSideTool === "scissors"
-              ? "bg-gray-200 shadow-md transform translate-x-1"
-              : "hover:bg-gray-100"
-          }`}
-          onClick={() => handleToolClick("scissors")}
-        >
-          <FiScissors size={22} />
-        </div>
-
-        <div
-          className={`w-12 h-12 flex items-center justify-center rounded-full cursor-pointer transition-all ${
-            activeSideTool === "tape"
-              ? "bg-gray-200 shadow-md transform translate-x-1"
-              : "hover:bg-gray-100"
-          }`}
-          onClick={() => handleToolClick("tape")}
-        >
-          <FiType size={22} />
-        </div>
-      </div>
+          <img
+            src={tool.image}
+            alt={tool.alt}
+            className="w-16 h-16 object-contain"
+          />
+        </button>
+      ))}
     </div>
   );
 };
