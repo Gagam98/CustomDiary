@@ -5,6 +5,7 @@ import CanvasContent from "./CanvasContent";
 import Sidebar from "./SideToolbar";
 import Physics from "../../hooks/Physics";
 import Matter from "matter-js";
+import GuideSlide from "./GuideSlide";
 
 const Index = () => {
   const location = useLocation();
@@ -23,6 +24,8 @@ const Index = () => {
         isGlueModeActive ? "cursor-grab" : ""
       }`}
     >
+      <GuideSlide />
+
       {/* 상단 툴바 */}
       <TopToolbar
         setStickers={setStickers}
