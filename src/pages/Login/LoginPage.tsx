@@ -61,13 +61,34 @@ const LoginPage: React.FC = () => {
         }),
       });
 
-      const message = await response.text();
-      alert(message);
+      if (response.ok) {
+        // 성공적인 응답인 경우
+        try {
+          const userData = await response.json();
+          // 서버에서 사용자 정보를 JSON으로 반환하는 경우
+          localStorage.setItem(
+            "user",
+            JSON.stringify({
+              email: formData.email,
+              name: userData.name || null,
+            })
+          );
+        } catch {
+          // JSON 파싱이 실패하면 기본 정보만 저장
+          localStorage.setItem(
+            "user",
+            JSON.stringify({
+              email: formData.email,
+            })
+          );
+        }
 
-      if (message.includes("성공")) {
-        localStorage.setItem("user", JSON.stringify({ email: formData.email }));
+        alert("로그인에 성공했습니다.");
         // 원래 접근하려던 페이지로 이동
         navigate(from, { replace: true });
+      } else {
+        const message = await response.text();
+        alert(message || "로그인에 실패했습니다.");
       }
     } catch (error) {
       console.error("로그인 실패:", error);
@@ -99,11 +120,11 @@ const LoginPage: React.FC = () => {
               onChange={handleInputChange}
               className={`mt-1 w-full px-3 py-2 border ${
                 errors.email ? "border-red-300" : "border-gray-300"
-              } rounded-md`}
+              } rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500`}
               placeholder="이메일을 입력하세요"
             />
             {errors.email && (
-              <p className="text-sm text-red-600">{errors.email}</p>
+              <p className="text-sm text-red-600 mt-1">{errors.email}</p>
             )}
           </div>
 
@@ -122,19 +143,21 @@ const LoginPage: React.FC = () => {
               onChange={handleInputChange}
               className={`mt-1 w-full px-3 py-2 border ${
                 errors.password ? "border-red-300" : "border-gray-300"
-              } rounded-md`}
+              } rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500`}
               placeholder="비밀번호를 입력하세요"
             />
             {errors.password && (
-              <p className="text-sm text-red-600">{errors.password}</p>
+              <p className="text-sm text-red-600 mt-1">{errors.password}</p>
             )}
           </div>
 
           <button
             type="submit"
             disabled={isLoading}
-            className={`w-full py-2 px-4 rounded-md text-white ${
-              isLoading ? "bg-gray-400" : "bg-indigo-600 hover:bg-indigo-700"
+            className={`w-full py-2 px-4 rounded-md text-white font-medium transition-colors ${
+              isLoading
+                ? "bg-gray-400 cursor-not-allowed"
+                : "bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
             }`}
           >
             {isLoading ? "로그인 중..." : "로그인"}
@@ -144,7 +167,7 @@ const LoginPage: React.FC = () => {
             계정이 없으신가요?{" "}
             <Link
               to="/register"
-              className="text-indigo-600 hover:text-indigo-500"
+              className="text-indigo-600 hover:text-indigo-500 font-medium"
             >
               회원가입
             </Link>
