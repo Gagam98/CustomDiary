@@ -5,7 +5,7 @@ const API_BASE_URL = "http://localhost:8080/api";
 
 export interface Drawing {
   id?: number;
-  userId: number;
+  userId?: number; // optional로 변경
   title: string;
   canvasData: string;
   thumbnail?: string;
@@ -26,6 +26,22 @@ export interface ApiError {
   message: string;
   status: number;
   statusText: string;
+}
+
+// 드로잉 생성 요청 타입 (userId 제외)
+export interface CreateDrawingRequest {
+  title: string;
+  canvasData: string;
+  thumbnail?: string;
+  starred?: boolean; // starred 속성 추가
+}
+
+// 드로잉 업데이트 요청 타입
+export interface UpdateDrawingRequest {
+  title?: string;
+  canvasData?: string;
+  thumbnail?: string;
+  starred?: boolean;
 }
 
 // JWT 토큰을 헤더에 포함하는 함수
@@ -112,9 +128,7 @@ export const drawingAPI = {
   },
 
   // 새 드로잉 생성
-  createDrawing: async (
-    drawing: Omit<Drawing, "id" | "createdAt" | "updatedAt">
-  ): Promise<Drawing> => {
+  createDrawing: async (drawing: CreateDrawingRequest): Promise<Drawing> => {
     return apiRequest<Drawing>(`${API_BASE_URL}/drawings`, {
       method: "POST",
       body: JSON.stringify(drawing),
@@ -124,7 +138,7 @@ export const drawingAPI = {
   // 드로잉 업데이트
   updateDrawing: async (
     id: number,
-    drawing: Partial<Drawing>
+    drawing: UpdateDrawingRequest
   ): Promise<Drawing> => {
     return apiRequest<Drawing>(`${API_BASE_URL}/drawings/${id}`, {
       method: "PUT",

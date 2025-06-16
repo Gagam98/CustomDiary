@@ -64,7 +64,7 @@ export default function Home() {
   const createNewDocument = async (title: string) => {
     try {
       const newDrawing = await drawingAPI.createDrawing({
-        userId: 1, // 실제로는 현재 로그인한 사용자 ID를 사용
+        //userId: 1, // 실제로는 현재 로그인한 사용자 ID를 사용
         title: title,
         canvasData: "", // 빈 캔버스로 시작
         thumbnail: "",

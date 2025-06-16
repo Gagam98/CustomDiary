@@ -6,7 +6,8 @@ import Sidebar from "./SideToolbar";
 import Physics from "../../hooks/Physics";
 import Matter from "matter-js";
 import GuideSlide from "./GuideSlide";
-import { drawingAPI } from "../../utils/apiService";
+import { drawingAPI, CreateDrawingRequest } from "../../utils/apiService";
+import { getCurrentUser } from "../../utils/authUtils";
 
 const Index = () => {
   const location = useLocation();
@@ -76,36 +77,65 @@ const Index = () => {
   // 캔버스 데이터를 JSON으로 직렬화
   const serializeCanvasData = useCallback(() => {
     const canvasElement = canvasRef.current;
-    const canvasDataURL = canvasElement?.toDataURL() || "";
 
-    return JSON.stringify({
-      stickers,
-      photos,
-      canvasDataURL,
-      timestamp: new Date().toISOString(),
-    });
+    // 캔버스 요소가 없거나 null인 경우 처리
+    if (!canvasElement) {
+      console.warn("Canvas element not found, creating empty canvas data");
+      return JSON.stringify({
+        stickers,
+        photos,
+        canvasDataURL: "", // 빈 캔버스
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    try {
+      const canvasDataURL = canvasElement.toDataURL();
+      return JSON.stringify({
+        stickers,
+        photos,
+        canvasDataURL,
+        timestamp: new Date().toISOString(),
+      });
+    } catch (error) {
+      console.error("Failed to get canvas data URL:", error);
+      // 오류 발생시 기본값 반환
+      return JSON.stringify({
+        stickers,
+        photos,
+        canvasDataURL: "",
+        timestamp: new Date().toISOString(),
+      });
+    }
   }, [stickers, photos]);
 
   // 썸네일 생성
   const generateThumbnail = useCallback(() => {
     const canvasElement = canvasRef.current;
-    if (!canvasElement) return "";
+    if (!canvasElement) {
+      console.warn("Canvas element not found for thumbnail generation");
+      return "";
+    }
 
-    // 작은 크기의 썸네일 생성
-    const thumbnailCanvas = document.createElement("canvas");
-    const ctx = thumbnailCanvas.getContext("2d");
-    thumbnailCanvas.width = 200;
-    thumbnailCanvas.height = 150;
+    try {
+      // 작은 크기의 썸네일 생성
+      const thumbnailCanvas = document.createElement("canvas");
+      const ctx = thumbnailCanvas.getContext("2d");
+      thumbnailCanvas.width = 200;
+      thumbnailCanvas.height = 150;
 
-    if (ctx) {
-      ctx.drawImage(
-        canvasElement,
-        0,
-        0,
-        thumbnailCanvas.width,
-        thumbnailCanvas.height
-      );
-      return thumbnailCanvas.toDataURL("image/jpeg", 0.8);
+      if (ctx) {
+        ctx.drawImage(
+          canvasElement,
+          0,
+          0,
+          thumbnailCanvas.width,
+          thumbnailCanvas.height
+        );
+        return thumbnailCanvas.toDataURL("image/jpeg", 0.8);
+      }
+    } catch (error) {
+      console.error("Failed to generate thumbnail:", error);
     }
 
     return "";
@@ -122,6 +152,32 @@ const Index = () => {
       const canvasData = serializeCanvasData();
       const thumbnail = generateThumbnail();
 
+      // 로그인 상태 확인
+      const currentUser = getCurrentUser();
+      if (!currentUser) {
+        throw new Error("로그인이 필요합니다.");
+      }
+
+      // 디버깅: 실제 전송되는 데이터 확인
+      console.log("=== 드로잉 저장 디버깅 ===");
+      console.log("Title:", title);
+      console.log("CanvasData length:", canvasData?.length || 0);
+      console.log(
+        "CanvasData preview:",
+        canvasData?.substring(0, 200) || "EMPTY"
+      );
+      console.log("Thumbnail length:", thumbnail?.length || 0);
+      console.log("Canvas element exists:", !!canvasRef.current);
+      console.log("Stickers count:", stickers.length);
+      console.log("Photos count:", photos.length);
+
+      // 캔버스 데이터가 완전히 비어있는 경우에만 경고 (빈 캔버스는 허용)
+      if (!canvasData) {
+        console.warn("캔버스 데이터가 null/undefined입니다.");
+        setSaveError("데이터 생성에 실패했습니다. 페이지를 새로고침해주세요.");
+        return;
+      }
+
       if (drawingId) {
         // 기존 문서 업데이트
         await drawingAPI.updateDrawing(drawingId, {
@@ -130,13 +186,15 @@ const Index = () => {
           thumbnail,
         });
       } else {
-        // 새 문서 생성
-        const newDrawing = await drawingAPI.createDrawing({
-          userId: 1, // 실제 사용자 ID
+        // 새 문서 생성 - userId는 백엔드에서 자동 설정
+        const createRequest: CreateDrawingRequest = {
           title,
           canvasData,
           thumbnail,
-        });
+        };
+
+        console.log("Sending request:", createRequest);
+        const newDrawing = await drawingAPI.createDrawing(createRequest);
 
         // 새로 생성된 경우 URL 업데이트
         if (newDrawing.id) {
@@ -151,9 +209,18 @@ const Index = () => {
       }
 
       setLastSaved(new Date());
-    } catch (saveError) {
-      console.error("Failed to save drawing:", saveError);
-      setSaveError("저장에 실패했습니다. 다시 시도해주세요.");
+    } catch (error: unknown) {
+      console.error("Failed to save drawing:", error);
+
+      let errorMessage = "저장에 실패했습니다. 다시 시도해주세요.";
+
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      } else if (typeof error === "string") {
+        errorMessage = error;
+      }
+
+      setSaveError(errorMessage);
     } finally {
       setIsSaving(false);
     }
@@ -198,7 +265,7 @@ const Index = () => {
       await saveDrawing();
       navigate("/");
     } catch {
-      // 저장 실패해도 홈으로 이동 (error 변수 생략)
+      // 저장 실패해도 홈으로 이동
       navigate("/");
     }
   }, [isSaving, saveDrawing, navigate]);
