@@ -1,64 +1,22 @@
-import { useState, useRef } from "react";
-import TopToolbar from "./TopToolbar";
-import Physics from "../../hooks/Physics";
-import Sidebar from "./SideToolbar";
-import { useLocation } from "react-router-dom";
-import Matter from "matter-js";
+// Canvas.tsx - 이제 Index.tsx에서 모든 기능을 처리하므로 이 파일은 제거하거나
+// 특별한 경우에만 사용하는 단순한 래퍼로 유지할 수 있습니다.
 
-interface Sticker {
-  id: string;
-  shape: string;
-  x: number;
-  y: number;
-  size: number;
-  color: string;
-}
-
-interface Photo {
-  id: string;
-  image: HTMLImageElement;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-}
+import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import Index from "./Index";
 
 const Canvas: React.FC = () => {
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const engineRef = useRef<Matter.Engine | null>(null);
-  const [stickers, setStickers] = useState<Sticker[]>([]);
-  const [photos, setPhotos] = useState<Photo[]>([]);
-  const [activeSideTool, setActiveSideTool] = useState("glue");
-  const [isGlueModeActive, setIsGlueModeActive] = useState(false);
-  const location = useLocation();
-  const title = location.state?.title || "Untitled";
+  const navigate = useNavigate();
 
-  return (
-    <div className="relative w-full h-screen">
-      <div className="absolute left-0 top-0 w-16 z-50">
-        <Sidebar
-          activeSideTool={activeSideTool}
-          setActiveSideTool={setActiveSideTool}
-        />
-      </div>
-      <div className={`w-full h-full ${isGlueModeActive ? "cursor-grab" : ""}`}>
-        <TopToolbar
-          setStickers={setStickers}
-          setPhotos={setPhotos}
-          canvasRef={canvasRef}
-          title={title}
-          engineRef={engineRef}
-        />
-        <Physics
-          photos={photos}
-          stickers={stickers}
-          ref={canvasRef}
-          activeSideTool={activeSideTool}
-          setGlueModeActive={setIsGlueModeActive}
-        />
-      </div>
-    </div>
-  );
+  // Canvas 컴포넌트로 직접 접근한 경우 Index로 리다이렉트
+  useEffect(() => {
+    // 만약 특별한 라우팅 로직이 필요하지 않다면 Index 컴포넌트를 직접 사용
+    // 또는 이 컴포넌트를 완전히 제거하고 라우터에서 Index를 직접 사용
+  }, [navigate]);
+
+  return <Index />;
 };
 
 export default Canvas;
+
+// 또는 이 파일을 완전히 제거하고 라우터 설정에서 Index 컴포넌트를 직접 사용하는 것을 권장합니다.

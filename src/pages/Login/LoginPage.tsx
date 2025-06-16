@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
+import { loginUser } from "../../utils/authUtils";
 
 interface LoginFormData {
   email: string;
@@ -13,6 +14,7 @@ const LoginPage: React.FC = () => {
   });
   const [errors, setErrors] = useState<Partial<LoginFormData>>({});
   const [isLoading, setIsLoading] = useState(false);
+  const [apiError, setApiError] = useState<string>(""); // API 에러 메시지용
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -24,6 +26,10 @@ const LoginPage: React.FC = () => {
     setFormData((prev) => ({ ...prev, [name]: value }));
     if (errors[name as keyof LoginFormData]) {
       setErrors((prev) => ({ ...prev, [name]: "" }));
+    }
+    // API 에러 메시지 초기화
+    if (apiError) {
+      setApiError("");
     }
   };
 
@@ -50,49 +56,33 @@ const LoginPage: React.FC = () => {
     if (!validateForm()) return;
 
     setIsLoading(true);
+    setApiError("");
 
     try {
-      const response = await fetch("http://localhost:8080/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: formData.email,
-          password: formData.password,
-        }),
+      // authUtils의 loginUser 함수 사용
+      const result = await loginUser({
+        email: formData.email,
+        password: formData.password,
       });
 
-      if (response.ok) {
-        // 성공적인 응답인 경우
-        try {
-          const userData = await response.json();
-          // 서버에서 사용자 정보를 JSON으로 반환하는 경우
-          localStorage.setItem(
-            "user",
-            JSON.stringify({
-              email: formData.email,
-              name: userData.name || null,
-            })
-          );
-        } catch {
-          // JSON 파싱이 실패하면 기본 정보만 저장
-          localStorage.setItem(
-            "user",
-            JSON.stringify({
-              email: formData.email,
-            })
-          );
-        }
+      console.log("로그인 성공:", result);
 
-        alert("로그인에 성공했습니다.");
-        // 원래 접근하려던 페이지로 이동
-        navigate(from, { replace: true });
-      } else {
-        const message = await response.text();
-        alert(message || "로그인에 실패했습니다.");
-      }
-    } catch (error) {
+      // 성공 메시지 표시 (선택사항)
+      // alert("로그인에 성공했습니다.");
+
+      // 원래 접근하려던 페이지로 이동
+      navigate(from, { replace: true });
+    } catch (error: unknown) {
       console.error("로그인 실패:", error);
-      alert("로그인 중 오류가 발생했습니다.");
+
+      // Error 타입 체크
+      if (error instanceof Error) {
+        setApiError(error.message);
+      } else if (typeof error === "string") {
+        setApiError(error);
+      } else {
+        setApiError("로그인에 실패했습니다.");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -104,6 +94,14 @@ const LoginPage: React.FC = () => {
         <h2 className="text-center text-3xl font-extrabold text-gray-900">
           로그인
         </h2>
+
+        {/* API 에러 메시지 표시 */}
+        {apiError && (
+          <div className="bg-red-50 border border-red-200 rounded-md p-4">
+            <p className="text-sm text-red-600">{apiError}</p>
+          </div>
+        )}
+
         <form className="space-y-6" onSubmit={handleSubmit}>
           <div>
             <label

@@ -1,18 +1,19 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 
 interface PopupProps {
   isOpen: boolean;
   onClose: () => void;
+  onCreateDocument: (title: string) => Promise<void>;
 }
 
-const Popup = ({ isOpen, onClose }: PopupProps) => {
-  const navigate = useNavigate();
+const Popup = ({ isOpen, onClose, onCreateDocument }: PopupProps) => {
   const [title, setTitle] = useState("");
+  const [isCreating, setIsCreating] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = "hidden";
+      setTitle(""); // 팝업이 열릴 때마다 제목 초기화
     } else {
       document.body.style.overflow = "auto";
     }
@@ -20,6 +21,30 @@ const Popup = ({ isOpen, onClose }: PopupProps) => {
       document.body.style.overflow = "auto";
     };
   }, [isOpen]);
+
+  const handleCreate = async () => {
+    if (!title.trim()) {
+      alert("제목을 입력해주세요.");
+      return;
+    }
+
+    try {
+      setIsCreating(true);
+      await onCreateDocument(title.trim());
+      onClose();
+    } catch (error) {
+      console.error("Failed to create document:", error);
+      alert("문서 생성에 실패했습니다.");
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && !isCreating) {
+      handleCreate();
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -43,28 +68,30 @@ const Popup = ({ isOpen, onClose }: PopupProps) => {
           <input
             type="text"
             placeholder="제목을 입력하세요"
-            className="w-full mt-2 px-3 py-2 border rounded"
+            className="w-full mt-2 px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
+            onKeyPress={handleKeyPress}
+            disabled={isCreating}
+            autoFocus
           />
         </div>
 
         {/* 버튼 */}
         <div className="mt-6 flex justify-end space-x-2">
           <button
-            className="px-4 py-2 bg-gray-300 text-gray-700 rounded"
+            className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400 disabled:opacity-50"
             onClick={onClose}
+            disabled={isCreating}
           >
             취소
           </button>
           <button
-            className="px-4 py-2 bg-blue-500 text-white rounded"
-            onClick={() => {
-              onClose();
-              navigate("/canvas", { state: { title } });
-            }}
+            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
+            onClick={handleCreate}
+            disabled={isCreating || !title.trim()}
           >
-            생성
+            {isCreating ? "생성 중..." : "생성"}
           </button>
         </div>
       </div>

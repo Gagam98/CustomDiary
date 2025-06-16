@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { registerUser } from "../../utils/authUtils";
 
 interface RegisterFormData {
   name: string;
@@ -17,6 +18,7 @@ const RegisterPage: React.FC = () => {
   });
   const [errors, setErrors] = useState<Partial<RegisterFormData>>({});
   const [isLoading, setIsLoading] = useState(false);
+  const [apiError, setApiError] = useState<string>(""); // API 에러 메시지용
   const navigate = useNavigate();
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -24,6 +26,10 @@ const RegisterPage: React.FC = () => {
     setFormData((prev) => ({ ...prev, [name]: value }));
     if (errors[name as keyof RegisterFormData]) {
       setErrors((prev) => ({ ...prev, [name]: "" }));
+    }
+    // API 에러 메시지 초기화
+    if (apiError) {
+      setApiError("");
     }
   };
 
@@ -65,27 +71,34 @@ const RegisterPage: React.FC = () => {
     if (!validateForm()) return;
 
     setIsLoading(true);
+    setApiError("");
 
     try {
-      const response = await fetch("http://localhost:8080/api/auth/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: formData.name,
-          email: formData.email,
-          password: formData.password,
-        }),
+      // authUtils의 registerUser 함수 사용
+      const result = await registerUser({
+        name: formData.name,
+        email: formData.email,
+        password: formData.password,
       });
 
-      const message = await response.text();
-      alert(message);
+      console.log("회원가입 성공:", result);
 
-      if (message.includes("성공")) {
-        navigate("/login");
-      }
-    } catch (error) {
+      // 성공 메시지 표시
+      alert("회원가입에 성공했습니다! 자동으로 로그인됩니다.");
+
+      // 회원가입 성공 후 홈으로 리디렉션 (이미 로그인 상태)
+      navigate("/", { replace: true });
+    } catch (error: unknown) {
       console.error("회원가입 실패:", error);
-      alert("회원가입 중 오류가 발생했습니다.");
+
+      // Error 타입 체크
+      if (error instanceof Error) {
+        setApiError(error.message);
+      } else if (typeof error === "string") {
+        setApiError(error);
+      } else {
+        setApiError("회원가입에 실패했습니다.");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -97,6 +110,14 @@ const RegisterPage: React.FC = () => {
         <h2 className="text-center text-3xl font-extrabold text-gray-900">
           회원가입
         </h2>
+
+        {/* API 에러 메시지 표시 */}
+        {apiError && (
+          <div className="bg-red-50 border border-red-200 rounded-md p-4">
+            <p className="text-sm text-red-600">{apiError}</p>
+          </div>
+        )}
+
         <form className="space-y-6" onSubmit={handleSubmit}>
           <div>
             <label
@@ -113,11 +134,11 @@ const RegisterPage: React.FC = () => {
               onChange={handleInputChange}
               className={`mt-1 w-full px-3 py-2 border ${
                 errors.name ? "border-red-300" : "border-gray-300"
-              } rounded-md`}
+              } rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500`}
               placeholder="이름을 입력하세요"
             />
             {errors.name && (
-              <p className="text-sm text-red-600">{errors.name}</p>
+              <p className="text-sm text-red-600 mt-1">{errors.name}</p>
             )}
           </div>
 
@@ -136,11 +157,11 @@ const RegisterPage: React.FC = () => {
               onChange={handleInputChange}
               className={`mt-1 w-full px-3 py-2 border ${
                 errors.email ? "border-red-300" : "border-gray-300"
-              } rounded-md`}
+              } rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500`}
               placeholder="이메일을 입력하세요"
             />
             {errors.email && (
-              <p className="text-sm text-red-600">{errors.email}</p>
+              <p className="text-sm text-red-600 mt-1">{errors.email}</p>
             )}
           </div>
 
@@ -159,11 +180,11 @@ const RegisterPage: React.FC = () => {
               onChange={handleInputChange}
               className={`mt-1 w-full px-3 py-2 border ${
                 errors.password ? "border-red-300" : "border-gray-300"
-              } rounded-md`}
+              } rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500`}
               placeholder="비밀번호를 입력하세요"
             />
             {errors.password && (
-              <p className="text-sm text-red-600">{errors.password}</p>
+              <p className="text-sm text-red-600 mt-1">{errors.password}</p>
             )}
           </div>
 
@@ -182,19 +203,23 @@ const RegisterPage: React.FC = () => {
               onChange={handleInputChange}
               className={`mt-1 w-full px-3 py-2 border ${
                 errors.confirmPassword ? "border-red-300" : "border-gray-300"
-              } rounded-md`}
+              } rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500`}
               placeholder="비밀번호를 다시 입력하세요"
             />
             {errors.confirmPassword && (
-              <p className="text-sm text-red-600">{errors.confirmPassword}</p>
+              <p className="text-sm text-red-600 mt-1">
+                {errors.confirmPassword}
+              </p>
             )}
           </div>
 
           <button
             type="submit"
             disabled={isLoading}
-            className={`w-full py-2 px-4 rounded-md text-white ${
-              isLoading ? "bg-gray-400" : "bg-indigo-600 hover:bg-indigo-700"
+            className={`w-full py-2 px-4 rounded-md text-white font-medium transition-colors ${
+              isLoading
+                ? "bg-gray-400 cursor-not-allowed"
+                : "bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
             }`}
           >
             {isLoading ? "회원가입 중..." : "회원가입"}
@@ -202,7 +227,10 @@ const RegisterPage: React.FC = () => {
 
           <div className="text-center text-sm text-gray-600">
             이미 계정이 있으신가요?{" "}
-            <Link to="/login" className="text-indigo-600 hover:text-indigo-500">
+            <Link
+              to="/login"
+              className="text-indigo-600 hover:text-indigo-500 font-medium"
+            >
               로그인
             </Link>
           </div>
