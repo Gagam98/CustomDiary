@@ -12,10 +12,8 @@ interface PhysicsProps {
   setGlueModeActive: (active: boolean) => void;
 }
 
-// 스티커 이미지 캐시를 위한 Map 선언
 const stickerImageCache = new Map<string, HTMLImageElement>();
 
-// 스티커 이미지 사전 로드 함수
 const preloadStickerImage = (stickerSvg: {
   src: string;
 }): Promise<HTMLImageElement> => {
@@ -28,11 +26,10 @@ const preloadStickerImage = (stickerSvg: {
   });
 };
 
-// 고양이 스티커를 위한 물리 속성 최적화
 const catStickerOptions = {
-  restitution: 0.6, // 탄성 감소
-  friction: 0.3, // 마찰 증가
-  density: 0.003, // 밀도 증가
+  restitution: 0.6,
+  friction: 0.3,
+  density: 0.003,
   frictionAir: 0.001,
   collisionFilter: {
     category: 0x0004,
@@ -52,6 +49,7 @@ const Physics = forwardRef<HTMLCanvasElement, PhysicsProps>(
     const gridCanvasRef = useRef<HTMLCanvasElement>(null);
     const selectedBodyRef = useRef<Matter.Body | null>(null);
     const isDraggingRef = useRef(false);
+    const canvasDimensionsRef = useRef({ width: 0, height: 0 });
 
     useEffect(() => {
       if (typeof ref === "function") {
@@ -61,8 +59,40 @@ const Physics = forwardRef<HTMLCanvasElement, PhysicsProps>(
       }
     }, [ref]);
 
+    // 캔버스 크기 초기화 함수
+    const initializeCanvasSize = () => {
+      const canvas = canvasRef.current;
+      if (!canvas) return { width: 0, height: 0 };
+
+      const container = canvas.parentElement;
+      if (!container) return { width: 0, height: 0 };
+
+      const { width, height } = container.getBoundingClientRect();
+
+      // 고해상도 디스플레이 대응
+      const pixelRatio = window.devicePixelRatio || 1;
+
+      canvas.width = width * pixelRatio;
+      canvas.height = height * pixelRatio;
+      canvas.style.width = `${width}px`;
+      canvas.style.height = `${height}px`;
+
+      const ctx = canvas.getContext("2d");
+      if (ctx) {
+        ctx.scale(pixelRatio, pixelRatio);
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = "high";
+      }
+
+      canvasDimensionsRef.current = { width, height };
+      return { width, height };
+    };
+
     useEffect(() => {
       if (!canvasRef.current) return;
+
+      // 캔버스 크기 초기화
+      const dimensions = initializeCanvasSize();
 
       // Matter.js 엔진 초기화
       const engine = Matter.Engine.create({
@@ -73,10 +103,8 @@ const Physics = forwardRef<HTMLCanvasElement, PhysicsProps>(
       });
       engineRef.current = engine;
 
-      // 중력 설정
       engine.world.gravity.y = 2;
 
-      // 벽 생성 - 위치 및 크기 조정
       const wallOptions = {
         isStatic: true,
         render: { visible: false },
@@ -88,46 +116,36 @@ const Physics = forwardRef<HTMLCanvasElement, PhysicsProps>(
         },
       };
 
-      // 화면 크기 가져오기
-      const container = canvasRef.current.parentElement;
-      if (!container) return;
-      const { width, height } = container.getBoundingClientRect();
-
       const walls = [
-        // 바닥
         Matter.Bodies.rectangle(
-          width / 2,
-          height + 60, // 바닥을 약간 아래로 내림
-          width * 2, // 너비를 더 넓게
+          dimensions.width / 2,
+          dimensions.height + 60,
+          dimensions.width * 2,
           60,
           wallOptions
         ),
-        // 왼쪽 벽
         Matter.Bodies.rectangle(
-          -30, // 왼쪽 벽을 약간 바깥으로
-          height / 2,
+          -30,
+          dimensions.height / 2,
           60,
-          height * 2,
+          dimensions.height * 2,
           wallOptions
         ),
-        // 오른쪽 벽
         Matter.Bodies.rectangle(
-          width + 30, // 오른쪽 벽을 약간 바깥으로
-          height / 2,
+          dimensions.width + 30,
+          dimensions.height / 2,
           60,
-          height * 2,
+          dimensions.height * 2,
           wallOptions
         ),
       ];
 
       Matter.World.add(engine.world, walls);
 
-      // 충돌 필터링 설정
       Matter.Events.on(engine, "beforeUpdate", () => {
         const bodies = Matter.Composite.allBodies(engine.world);
         bodies.forEach((body) => {
-          if (body.position.y > height + 1000) {
-            // 너무 멀리 떨어진 객체를 다시 위로 올림
+          if (body.position.y > dimensions.height + 1000) {
             Matter.Body.setPosition(body, {
               x: body.position.x,
               y: 0,
@@ -146,8 +164,19 @@ const Physics = forwardRef<HTMLCanvasElement, PhysicsProps>(
       };
     }, []);
 
+    // 윈도우 리사이즈 처리
     useEffect(() => {
-      // 스티커 이미지 사전 로드
+      const handleResize = () => {
+        setTimeout(() => {
+          initializeCanvasSize();
+        }, 100);
+      };
+
+      window.addEventListener("resize", handleResize);
+      return () => window.removeEventListener("resize", handleResize);
+    }, []);
+
+    useEffect(() => {
       stickerSvgs.forEach(async (svg, index) => {
         try {
           const img = await preloadStickerImage(svg);
@@ -157,7 +186,6 @@ const Physics = forwardRef<HTMLCanvasElement, PhysicsProps>(
         }
       });
 
-      // 고양이 스티커 이미지도 사전 로드 추가
       catStickers.forEach(async (cat, index) => {
         try {
           const img = await preloadStickerImage(cat);
@@ -368,89 +396,90 @@ const Physics = forwardRef<HTMLCanvasElement, PhysicsProps>(
 
       let animationFrameId: number;
       const render = () => {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        // 캔버스 크기를 컨테이너 크기에 맞춤 (window.innerWidth/Height 대신)
+        const { width, height } = canvasDimensionsRef.current;
+        if (width > 0 && height > 0) {
+          ctx.clearRect(0, 0, width, height);
 
-        photos.forEach((photo) => {
-          const body = bodiesRef.current[`photo-${photo.id}`];
-          if (!body) return;
+          photos.forEach((photo) => {
+            const body = bodiesRef.current[`photo-${photo.id}`];
+            if (!body) return;
 
-          ctx.save();
-          ctx.translate(body.position.x, body.position.y);
-          ctx.rotate(body.angle);
-          ctx.drawImage(
-            photo.image,
-            -photo.width / 2,
-            -photo.height / 2,
-            photo.width,
-            photo.height
-          );
-          ctx.restore();
-        });
+            ctx.save();
+            ctx.translate(body.position.x, body.position.y);
+            ctx.rotate(body.angle);
+            ctx.drawImage(
+              photo.image,
+              -photo.width / 2,
+              -photo.height / 2,
+              photo.width,
+              photo.height
+            );
+            ctx.restore();
+          });
 
-        stickers.forEach((sticker) => {
-          const body = bodiesRef.current[`sticker-${sticker.id}`];
-          if (!body) return;
+          stickers.forEach((sticker) => {
+            const body = bodiesRef.current[`sticker-${sticker.id}`];
+            if (!body) return;
 
-          ctx.save();
-          ctx.translate(body.position.x, body.position.y);
-          ctx.rotate(body.angle);
+            ctx.save();
+            ctx.translate(body.position.x, body.position.y);
+            ctx.rotate(body.angle);
 
-          const s = sticker.size;
-          if (sticker.shape.startsWith("sticker")) {
-            const cachedImage = stickerImageCache.get(sticker.shape);
-            if (cachedImage && cachedImage.complete) {
-              ctx.drawImage(cachedImage, -s / 2, -s / 2, s, s);
-            }
-          } else if (sticker.shape.startsWith("cat")) {
-            const catIndex = parseInt(sticker.shape.replace("cat", "")) - 1;
-            const cat = catStickers[catIndex];
-            if (cat) {
-              const img = stickerImageCache.get(sticker.shape);
-              if (img && img.complete) {
-                const height = s * 1.2; // 고양이 스티커 비율 조정
-                ctx.drawImage(img, -s / 2, -height / 2, s, height);
-              } else {
-                // 이미지가 로드되지 않았을 때 임시 표시
-                ctx.fillStyle = sticker.color;
-                ctx.fillRect(-s / 2, -s / 2, s, s);
+            const s = sticker.size;
+            if (sticker.shape.startsWith("sticker")) {
+              const cachedImage = stickerImageCache.get(sticker.shape);
+              if (cachedImage && cachedImage.complete) {
+                ctx.drawImage(cachedImage, -s / 2, -s / 2, s, s);
+              }
+            } else if (sticker.shape.startsWith("cat")) {
+              const catIndex = parseInt(sticker.shape.replace("cat", "")) - 1;
+              const cat = catStickers[catIndex];
+              if (cat) {
+                const img = stickerImageCache.get(sticker.shape);
+                if (img && img.complete) {
+                  const height = s * 1.2;
+                  ctx.drawImage(img, -s / 2, -height / 2, s, height);
+                } else {
+                  ctx.fillStyle = sticker.color;
+                  ctx.fillRect(-s / 2, -s / 2, s, s);
+                }
+              }
+            } else {
+              ctx.fillStyle = sticker.color;
+              switch (sticker.shape) {
+                case "circle":
+                  ctx.beginPath();
+                  ctx.arc(0, 0, s / 2, 0, 2 * Math.PI);
+                  ctx.fill();
+                  break;
+                case "square":
+                  ctx.fillRect(-s / 2, -s / 2, s, s);
+                  break;
+                case "triangle":
+                  ctx.beginPath();
+                  ctx.moveTo(0, -s / 2);
+                  ctx.lineTo(s / 2, s / 2);
+                  ctx.lineTo(-s / 2, s / 2);
+                  ctx.closePath();
+                  ctx.fill();
+                  break;
+                case "heart":
+                  ctx.beginPath();
+                  ctx.moveTo(0, -s / 4);
+                  ctx.bezierCurveTo(s / 2, -s / 2, s / 2, s / 4, 0, s / 2);
+                  ctx.bezierCurveTo(-s / 2, s / 4, -s / 2, -s / 2, 0, -s / 4);
+                  ctx.closePath();
+                  ctx.fill();
+                  break;
+                case "star":
+                  renderStar(ctx, 0, 0, 5, s / 2, s / 4);
+                  break;
               }
             }
-          } else {
-            ctx.fillStyle = sticker.color;
-            switch (sticker.shape) {
-              case "circle":
-                ctx.beginPath();
-                ctx.arc(0, 0, s / 2, 0, 2 * Math.PI);
-                ctx.fill();
-                break;
-              case "square":
-                ctx.fillRect(-s / 2, -s / 2, s, s);
-                break;
-              case "triangle":
-                ctx.beginPath();
-                ctx.moveTo(0, -s / 2);
-                ctx.lineTo(s / 2, s / 2);
-                ctx.lineTo(-s / 2, s / 2);
-                ctx.closePath();
-                ctx.fill();
-                break;
-              case "heart":
-                ctx.beginPath();
-                ctx.moveTo(0, -s / 4);
-                ctx.bezierCurveTo(s / 2, -s / 2, s / 2, s / 4, 0, s / 2);
-                ctx.bezierCurveTo(-s / 2, s / 4, -s / 2, -s / 2, 0, -s / 4);
-                ctx.closePath();
-                ctx.fill();
-                break;
-              case "star":
-                renderStar(ctx, 0, 0, 5, s / 2, s / 4);
-                break;
-            }
-          }
-          ctx.restore();
-        });
+            ctx.restore();
+          });
+        }
 
         animationFrameId = requestAnimationFrame(render);
       };
@@ -465,7 +494,6 @@ const Physics = forwardRef<HTMLCanvasElement, PhysicsProps>(
       const ctx = canvas.getContext("2d");
       if (!ctx) return;
 
-      // 캔버스 크기 설정
       const container = canvas.parentElement;
       if (!container) return;
       const { width, height } = container.getBoundingClientRect();
@@ -476,15 +504,12 @@ const Physics = forwardRef<HTMLCanvasElement, PhysicsProps>(
       canvas.style.width = `${width}px`;
       canvas.style.height = `${height}px`;
 
-      // 모눈종이 그리기
       ctx.scale(dpr, dpr);
       ctx.strokeStyle = "#e5e5e5";
       ctx.lineWidth = 1;
 
-      // 격자 크기
       const gridSize = 20;
 
-      // 가로선 그리기
       for (let y = 0; y < height; y += gridSize) {
         ctx.beginPath();
         ctx.moveTo(0, y);
@@ -492,7 +517,6 @@ const Physics = forwardRef<HTMLCanvasElement, PhysicsProps>(
         ctx.stroke();
       }
 
-      // 세로선 그리기
       for (let x = 0; x < width; x += gridSize) {
         ctx.beginPath();
         ctx.moveTo(x, 0);
@@ -508,9 +532,10 @@ const Physics = forwardRef<HTMLCanvasElement, PhysicsProps>(
       const handleMouseDown = (e: MouseEvent) => {
         if (activeSideTool !== "glue") return;
 
+        const rect = canvas.getBoundingClientRect();
         const mousePosition = {
-          x: e.clientX,
-          y: e.clientY,
+          x: e.clientX - rect.left,
+          y: e.clientY - rect.top,
         };
 
         const bodies = Matter.Composite.allBodies(engineRef.current!.world);
@@ -529,9 +554,10 @@ const Physics = forwardRef<HTMLCanvasElement, PhysicsProps>(
       const handleMouseMove = (e: MouseEvent) => {
         if (!isDraggingRef.current || !selectedBodyRef.current) return;
 
+        const rect = canvas.getBoundingClientRect();
         Matter.Body.setPosition(selectedBodyRef.current, {
-          x: e.clientX,
-          y: e.clientY,
+          x: e.clientX - rect.left,
+          y: e.clientY - rect.top,
         });
       };
 

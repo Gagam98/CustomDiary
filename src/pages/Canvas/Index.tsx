@@ -5,15 +5,32 @@ import CanvasContent from "./CanvasContent";
 import Sidebar from "./SideToolbar";
 import Physics from "../../hooks/Physics";
 import Matter from "matter-js";
-// import GuideSlide from "./GuideSlide";
 import { drawingAPI, CreateDrawingRequest } from "../../utils/apiService";
 import { getCurrentUser } from "../../utils/authUtils";
+
+// 캔버스 상태 타입 정의
+interface CanvasState {
+  stickers?: Sticker[];
+  photos?: Photo[];
+  canvasDataURL?: string;
+  canvasWidth?: number;
+  canvasHeight?: number;
+  pixelRatio?: number;
+  timestamp?: string;
+}
+
+// 캔버스 크기 정보 타입
+interface CanvasDimensions {
+  width: number;
+  height: number;
+  pixelRatio: number;
+}
 
 const Index = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const title = location.state?.title || "Untitled";
-  const drawingId = location.state?.drawingId; // 기존 문서의 ID (수정 모드)
+  const drawingId = location.state?.drawingId;
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const physicsCanvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -28,36 +45,109 @@ const Index = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
-  // 기존 문서 로드 (수정 모드인 경우)
+  // 캔버스 초기화 함수
+  const initializeCanvas = useCallback((): CanvasDimensions | undefined => {
+    const canvas = canvasRef.current;
+    if (!canvas) return undefined;
+
+    const container = canvas.parentElement;
+    if (!container) return undefined;
+
+    const containerRect = container.getBoundingClientRect();
+    const containerWidth = containerRect.width;
+    const containerHeight = containerRect.height;
+
+    // 고해상도 디스플레이 대응
+    const pixelRatio = window.devicePixelRatio || 1;
+
+    // 캔버스 실제 크기 설정
+    canvas.width = containerWidth * pixelRatio;
+    canvas.height = containerHeight * pixelRatio;
+
+    // 캔버스 CSS 크기 설정
+    canvas.style.width = `${containerWidth}px`;
+    canvas.style.height = `${containerHeight}px`;
+
+    // 컨텍스트 스케일 조정
+    const ctx = canvas.getContext("2d");
+    if (ctx) {
+      ctx.scale(pixelRatio, pixelRatio);
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = "high";
+    }
+
+    return { width: containerWidth, height: containerHeight, pixelRatio };
+  }, []);
+
+  // 캔버스 데이터 복원 함수
+  const restoreCanvasData = useCallback(
+    (canvasState: CanvasState) => {
+      const canvas = canvasRef.current;
+      if (!canvas || !canvasState.canvasDataURL) return;
+
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
+
+      const img = new Image();
+      img.onload = () => {
+        // 캔버스 초기화
+        const dimensions = initializeCanvas();
+        if (!dimensions) return;
+
+        // 캔버스 클리어
+        ctx.clearRect(0, 0, dimensions.width, dimensions.height);
+
+        // 저장된 크기 정보가 있으면 사용, 없으면 현재 캔버스 크기 사용
+        const savedWidth = canvasState.canvasWidth || dimensions.width;
+        const savedHeight = canvasState.canvasHeight || dimensions.height;
+
+        // 크기가 다른 경우 스케일 조정
+        const scaleX = dimensions.width / savedWidth;
+        const scaleY = dimensions.height / savedHeight;
+
+        if (Math.abs(scaleX - 1) > 0.01 || Math.abs(scaleY - 1) > 0.01) {
+          ctx.save();
+          ctx.scale(scaleX, scaleY);
+          ctx.drawImage(img, 0, 0, savedWidth, savedHeight);
+          ctx.restore();
+        } else {
+          // 1:1 크기인 경우 그대로 그리기
+          ctx.drawImage(img, 0, 0, dimensions.width, dimensions.height);
+        }
+      };
+
+      img.onerror = (error) => {
+        console.error("Failed to load canvas image:", error);
+      };
+
+      img.src = canvasState.canvasDataURL;
+    },
+    [initializeCanvas]
+  );
+
+  // 기존 문서 로드
   useEffect(() => {
     const loadExistingDrawing = async () => {
       if (!drawingId) return;
 
       setIsLoading(true);
       try {
-        // 실제로는 개별 문서를 가져오는 API가 필요합니다
         const drawings = await drawingAPI.getDrawings();
         const existingDrawing = drawings.find((d) => d.id === drawingId);
 
         if (existingDrawing && existingDrawing.canvasData) {
-          // 캔버스 데이터 복원 로직
           try {
-            const canvasState = JSON.parse(existingDrawing.canvasData);
+            const canvasState: CanvasState = JSON.parse(
+              existingDrawing.canvasData
+            );
 
             if (canvasState.stickers) setStickers(canvasState.stickers);
             if (canvasState.photos) setPhotos(canvasState.photos);
 
-            // 캔버스 이미지 데이터 복원
-            if (canvasState.canvasDataURL && canvasRef.current) {
-              const ctx = canvasRef.current.getContext("2d");
-              if (ctx) {
-                const img = new Image();
-                img.onload = () => {
-                  ctx.drawImage(img, 0, 0);
-                };
-                img.src = canvasState.canvasDataURL;
-              }
-            }
+            // 캔버스가 준비된 후 이미지 데이터 복원
+            setTimeout(() => {
+              restoreCanvasData(canvasState);
+            }, 300);
           } catch (parseError) {
             console.error("Failed to parse canvas data:", parseError);
             setSaveError("문서를 불러오는데 실패했습니다.");
@@ -72,45 +162,78 @@ const Index = () => {
     };
 
     loadExistingDrawing();
-  }, [drawingId]);
+  }, [drawingId, restoreCanvasData]);
 
-  // 캔버스 데이터를 JSON으로 직렬화
-  const serializeCanvasData = useCallback(() => {
+  // 캔버스 초기화 useEffect
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const timer = setTimeout(() => {
+      initializeCanvas();
+    }, 100);
+
+    return () => clearTimeout(timer);
+  }, [initializeCanvas]);
+
+  // 윈도우 리사이즈 이벤트 핸들링
+  useEffect(() => {
+    const handleResize = () => {
+      // 리사이즈 시 캔버스 재초기화
+      setTimeout(() => {
+        initializeCanvas();
+      }, 100);
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, [initializeCanvas]);
+
+  // 개선된 캔버스 데이터 직렬화
+  const serializeCanvasData = useCallback((): string => {
     const canvasElement = canvasRef.current;
 
-    // 캔버스 요소가 없거나 null인 경우 처리
-    if (!canvasElement) {
-      console.warn("Canvas element not found, creating empty canvas data");
-      return JSON.stringify({
-        stickers,
-        photos,
-        canvasDataURL: "", // 빈 캔버스
-        timestamp: new Date().toISOString(),
-      });
-    }
-
-    try {
-      const canvasDataURL = canvasElement.toDataURL();
-      return JSON.stringify({
-        stickers,
-        photos,
-        canvasDataURL,
-        timestamp: new Date().toISOString(),
-      });
-    } catch (error) {
-      console.error("Failed to get canvas data URL:", error);
-      // 오류 발생시 기본값 반환
+    const createEmptyCanvasData = (): string => {
       return JSON.stringify({
         stickers,
         photos,
         canvasDataURL: "",
+        canvasWidth: 0,
+        canvasHeight: 0,
+        pixelRatio: window.devicePixelRatio || 1,
         timestamp: new Date().toISOString(),
       });
+    };
+
+    if (!canvasElement) {
+      console.warn("Canvas element not found, creating empty canvas data");
+      return createEmptyCanvasData();
+    }
+
+    try {
+      const canvasDataURL = canvasElement.toDataURL("image/png");
+      const canvasWidth = canvasElement.offsetWidth;
+      const canvasHeight = canvasElement.offsetHeight;
+
+      const canvasData: CanvasState = {
+        stickers,
+        photos,
+        canvasDataURL,
+        canvasWidth,
+        canvasHeight,
+        pixelRatio: window.devicePixelRatio || 1,
+        timestamp: new Date().toISOString(),
+      };
+
+      return JSON.stringify(canvasData);
+    } catch (error) {
+      console.error("Failed to get canvas data URL:", error);
+      return createEmptyCanvasData();
     }
   }, [stickers, photos]);
 
   // 썸네일 생성
-  const generateThumbnail = useCallback(() => {
+  const generateThumbnail = useCallback((): string => {
     const canvasElement = canvasRef.current;
     if (!canvasElement) {
       console.warn("Canvas element not found for thumbnail generation");
@@ -118,7 +241,6 @@ const Index = () => {
     }
 
     try {
-      // 작은 크기의 썸네일 생성
       const thumbnailCanvas = document.createElement("canvas");
       const ctx = thumbnailCanvas.getContext("2d");
       thumbnailCanvas.width = 200;
@@ -142,7 +264,7 @@ const Index = () => {
   }, []);
 
   // 문서 저장
-  const saveDrawing = useCallback(async () => {
+  const saveDrawing = useCallback(async (): Promise<void> => {
     if (isSaving) return;
 
     setIsSaving(true);
@@ -152,26 +274,19 @@ const Index = () => {
       const canvasData = serializeCanvasData();
       const thumbnail = generateThumbnail();
 
-      // 로그인 상태 확인
       const currentUser = getCurrentUser();
       if (!currentUser) {
         throw new Error("로그인이 필요합니다.");
       }
 
-      // 디버깅: 실제 전송되는 데이터 확인
       console.log("=== 드로잉 저장 디버깅 ===");
       console.log("Title:", title);
       console.log("CanvasData length:", canvasData?.length || 0);
-      console.log(
-        "CanvasData preview:",
-        canvasData?.substring(0, 200) || "EMPTY"
-      );
       console.log("Thumbnail length:", thumbnail?.length || 0);
       console.log("Canvas element exists:", !!canvasRef.current);
       console.log("Stickers count:", stickers.length);
       console.log("Photos count:", photos.length);
 
-      // 캔버스 데이터가 완전히 비어있는 경우에만 경고 (빈 캔버스는 허용)
       if (!canvasData) {
         console.warn("캔버스 데이터가 null/undefined입니다.");
         setSaveError("데이터 생성에 실패했습니다. 페이지를 새로고침해주세요.");
@@ -179,14 +294,12 @@ const Index = () => {
       }
 
       if (drawingId) {
-        // 기존 문서 업데이트
         await drawingAPI.updateDrawing(drawingId, {
           title,
           canvasData,
           thumbnail,
         });
       } else {
-        // 새 문서 생성 - userId는 백엔드에서 자동 설정
         const createRequest: CreateDrawingRequest = {
           title,
           canvasData,
@@ -196,7 +309,6 @@ const Index = () => {
         console.log("Sending request:", createRequest);
         const newDrawing = await drawingAPI.createDrawing(createRequest);
 
-        // 새로 생성된 경우 URL 업데이트
         if (newDrawing.id) {
           navigate("/canvas", {
             state: {
@@ -231,6 +343,8 @@ const Index = () => {
     drawingId,
     title,
     navigate,
+    stickers,
+    photos,
   ]);
 
   // 자동 저장 (5초마다)
@@ -258,14 +372,13 @@ const Index = () => {
   }, [isSaving]);
 
   // 홈으로 돌아가기 전 저장
-  const handleBackToHome = useCallback(async () => {
+  const handleBackToHome = useCallback(async (): Promise<void> => {
     if (isSaving) return;
 
     try {
       await saveDrawing();
       navigate("/");
     } catch {
-      // 저장 실패해도 홈으로 이동
       navigate("/");
     }
   }, [isSaving, saveDrawing, navigate]);
@@ -284,9 +397,6 @@ const Index = () => {
         isGlueModeActive ? "cursor-grab" : ""
       }`}
     >
-      {/* <GuideSlide /> */}
-
-      {/* 에러 메시지 */}
       {saveError && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-2 text-sm">
           {saveError}
@@ -299,7 +409,6 @@ const Index = () => {
         </div>
       )}
 
-      {/* 상단 툴바 */}
       <TopToolbar
         setStickers={setStickers}
         setPhotos={setPhotos}
@@ -312,7 +421,6 @@ const Index = () => {
         onBackToHome={handleBackToHome}
       />
 
-      {/* 사이드바 + 캔버스 영역 */}
       <div className="flex flex-1 min-h-0">
         <div className="w-16 bg-white border-r">
           <Sidebar
