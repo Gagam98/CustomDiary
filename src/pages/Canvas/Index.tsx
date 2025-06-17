@@ -5,7 +5,7 @@ import CanvasContent from "./CanvasContent";
 import Sidebar from "./SideToolbar";
 import Physics from "../../hooks/Physics";
 import Matter from "matter-js";
-import GuideSlide from "./GuideSlide";
+// import GuideSlide from "./GuideSlide";
 import { drawingAPI, CreateDrawingRequest } from "../../utils/apiService";
 import { getCurrentUser } from "../../utils/authUtils";
 
@@ -284,7 +284,7 @@ const Index = () => {
         isGlueModeActive ? "cursor-grab" : ""
       }`}
     >
-      <GuideSlide />
+      {/* <GuideSlide /> */}
 
       {/* 에러 메시지 */}
       {saveError && (

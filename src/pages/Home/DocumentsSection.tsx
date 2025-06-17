@@ -61,22 +61,34 @@ export default function DocumentsSection({
     setShowMenuIndex(null);
   };
 
-  // 날짜 포맷 함수
+  // 날짜 포맷 함수 (시간 포함)
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     const today = new Date();
     const diffTime = Math.abs(today.getTime() - date.getTime());
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-    if (diffDays === 1) return "오늘";
-    if (diffDays === 2) return "어제";
-    if (diffDays <= 7) return `${diffDays - 1}일 전`;
+    // 시간 포맷팅 함수
+    const formatTime = (date: Date) => {
+      return date.toLocaleTimeString("ko-KR", {
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true,
+      });
+    };
 
-    return date.toLocaleDateString("ko-KR", {
+    if (diffDays === 1) return `오늘 ${formatTime(date)}`;
+    if (diffDays === 2) return `어제 ${formatTime(date)}`;
+    if (diffDays <= 7) return `${diffDays - 1}일 전 ${formatTime(date)}`;
+
+    // 7일 이상 지난 경우 날짜와 시간 모두 표시
+    const dateStr = date.toLocaleDateString("ko-KR", {
       year: "numeric",
       month: "numeric",
       day: "numeric",
     });
+
+    return `${dateStr} ${formatTime(date)}`;
   };
 
   // 정렬된 documents 계산

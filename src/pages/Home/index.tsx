@@ -190,43 +190,33 @@ export default function Home() {
           </h1>
           <div className="flex items-center space-x-1">
             {location.pathname === "/" && (
-              <>
+              <div className="bg-gray-100 rounded-md flex mr-2 relative p-0.5 gap-0 w-[94px]">
+                <div
+                  className={`absolute bg-white rounded-md shadow-sm transition-all duration-300 ease-in-out w-[46px] h-[26px] ${
+                    sortBy === "date" ? "translate-x-0" : "translate-x-[46px]"
+                  }`}
+                />
                 <button
-                  onClick={() =>
-                    createNewDocument(`새 문서 ${new Date().getTime()}`)
-                  }
-                  className="px-3 py-1.5 text-sm bg-blue-500 text-white rounded-md hover:bg-blue-600 mr-2"
+                  className={`px-3 py-1 text-sm font-medium rounded-md transition-colors relative z-10 w-[46px] whitespace-nowrap ${
+                    sortBy === "date"
+                      ? "text-gray-800"
+                      : "text-gray-600 hover:text-gray-800"
+                  }`}
+                  onClick={() => setSortBy("date")}
                 >
-                  새 문서
+                  날짜
                 </button>
-                <div className="bg-gray-100 rounded-md flex mr-2 relative p-0.5 gap-0 w-[94px]">
-                  <div
-                    className={`absolute bg-white rounded-md shadow-sm transition-all duration-300 ease-in-out w-[46px] h-[26px] ${
-                      sortBy === "date" ? "translate-x-0" : "translate-x-[46px]"
-                    }`}
-                  />
-                  <button
-                    className={`px-3 py-1 text-sm font-medium rounded-md transition-colors relative z-10 w-[46px] whitespace-nowrap ${
-                      sortBy === "date"
-                        ? "text-gray-800"
-                        : "text-gray-600 hover:text-gray-800"
-                    }`}
-                    onClick={() => setSortBy("date")}
-                  >
-                    날짜
-                  </button>
-                  <button
-                    className={`px-3 py-1 text-sm font-medium rounded-md transition-colors relative z-10 w-[46px] whitespace-nowrap ${
-                      sortBy === "name"
-                        ? "text-gray-800"
-                        : "text-gray-600 hover:text-gray-800"
-                    }`}
-                    onClick={() => setSortBy("name")}
-                  >
-                    이름
-                  </button>
-                </div>
-              </>
+                <button
+                  className={`px-3 py-1 text-sm font-medium rounded-md transition-colors relative z-10 w-[46px] whitespace-nowrap ${
+                    sortBy === "name"
+                      ? "text-gray-800"
+                      : "text-gray-600 hover:text-gray-800"
+                  }`}
+                  onClick={() => setSortBy("name")}
+                >
+                  이름
+                </button>
+              </div>
             )}
             {location.pathname === "/shared" && (
               <div className="relative mr-2">
