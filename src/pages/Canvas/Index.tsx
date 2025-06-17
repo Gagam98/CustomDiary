@@ -5,8 +5,8 @@ import CanvasContent from "./CanvasContent";
 import Sidebar from "./SideToolbar";
 import Physics from "../../hooks/Physics";
 import Matter from "matter-js";
-import { drawingAPI, CreateDrawingRequest } from "../../utils/apiService";
-import { getCurrentUser } from "../../utils/authUtils";
+import { drawingAPI, CreateDrawingRequest } from "../../utils/apiDrawings";
+import { getCurrentUser } from "../../utils/authLogin";
 
 // 직렬화 가능한 사진 데이터 타입
 interface SerializablePhoto {

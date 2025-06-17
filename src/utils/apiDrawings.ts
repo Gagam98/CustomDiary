@@ -1,5 +1,5 @@
 // apiService.ts
-import { getToken } from "./authUtils";
+import { getToken } from "./authLogin";
 
 const API_BASE_URL = "http://localhost:8080/api";
 
@@ -80,7 +80,7 @@ const handleApiError = async (response: Response): Promise<never> => {
   if (response.status === 401) {
     console.warn("Token expired or invalid, redirecting to login");
     // 동적 import로 순환 참조 방지
-    import("./authUtils").then(({ logout }) => logout());
+    import("./authLogin").then(({ logout }) => logout());
   }
 
   throw error;

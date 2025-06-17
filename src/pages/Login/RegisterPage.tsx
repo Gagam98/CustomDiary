@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { registerUser } from "../../utils/authUtils";
+import { registerUser } from "../../utils/authLogin";
 
 interface RegisterFormData {
   name: string;

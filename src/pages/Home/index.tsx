@@ -5,7 +5,7 @@ import { useState, useEffect } from "react";
 import DocumentsSection from "./DocumentsSection";
 import FavoritesSection from "./FavoritesSection";
 import SharedSection from "./SharedSection";
-import { drawingAPI, Drawing } from "../../utils/apiService";
+import { drawingAPI, Drawing } from "../../utils/apiDrawings";
 
 // Drawing을 UI에서 사용하는 형태로 변환
 interface UIDocument {

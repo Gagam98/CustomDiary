@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { loginUser } from "../../utils/authUtils";
+import { loginUser } from "../../utils/authLogin";
 
 interface LoginFormData {
   email: string;
