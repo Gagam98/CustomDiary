@@ -34,9 +34,9 @@ export interface Photo {
   y: number;
   width: number;
   height: number;
-  image: HTMLImageElement; // 반드시 HTMLImageElement여야 함
-  src: string; // 원본 이미지 URL도 보관
-  isLoaded?: boolean; // 이미지 로딩 상태 추가
+  image: HTMLImageElement;
+  src: string;
+  isLoaded?: boolean;
 }
 
 interface TopToolbarProps {
@@ -73,7 +73,7 @@ const TopToolbar: FC<TopToolbarProps> = ({
   const colorOptions = ["#FF0000", "#0000FF", "#000000", "#FFFFFF"];
   const photoToolRef = useRef<HTMLInputElement>(null);
 
-  // 사진 업로드 핸들러 함수 - props에서 받은 setPhotos 사용
+  // 사진 업로드 핸들러 함수
   const handlePhotoUpload = (file: File) => {
     const reader = new FileReader();
     reader.onload = (e) => {
@@ -85,7 +85,7 @@ const TopToolbar: FC<TopToolbarProps> = ({
           y: Math.random() * 200 + 100,
           width: Math.min(img.width, 200),
           height: Math.min(img.height, 200),
-          image: img, // HTMLImageElement 객체
+          image: img,
           src: e.target?.result as string,
           isLoaded: true,
         };
@@ -102,7 +102,7 @@ const TopToolbar: FC<TopToolbarProps> = ({
     reader.readAsDataURL(file);
   };
 
-  // 캔버스 컨텍스트 초기화 - 이전 상태 유지하도록 수정
+  // 캔버스 컨텍스트 초기화 - 배경색 설정 포함
   useEffect(() => {
     if (!canvasRef.current) return;
     const ctx = canvasRef.current.getContext("2d");
@@ -137,6 +137,11 @@ const TopToolbar: FC<TopToolbarProps> = ({
       ctx.scale(dpr, dpr);
       ctx.lineCap = "round";
       ctx.lineJoin = "round";
+
+      // 중요: 흰색 배경 설정
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, width, height);
+
       ctxRef.current = ctx;
 
       // 이전 내용 복원

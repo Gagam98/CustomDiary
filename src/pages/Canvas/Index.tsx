@@ -22,7 +22,7 @@ interface SerializablePhoto {
 // 캔버스 상태 타입 정의
 interface CanvasState {
   stickers?: Sticker[];
-  photos?: SerializablePhoto[]; // Photo 대신 SerializablePhoto 사용
+  photos?: SerializablePhoto[];
   canvasDataURL?: string;
   canvasWidth?: number;
   canvasHeight?: number;
@@ -56,7 +56,7 @@ const Index = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
-  // 캔버스 초기화 함수
+  // 캔버스 초기화 함수 (배경색 설정 포함)
   const initializeCanvas = useCallback((): CanvasDimensions | undefined => {
     const canvas = canvasRef.current;
     if (!canvas) return undefined;
@@ -71,6 +71,17 @@ const Index = () => {
     // 고해상도 디스플레이 대응
     const pixelRatio = window.devicePixelRatio || 1;
 
+    // 현재 캔버스 내용 백업 (기존 그림이 있는 경우)
+    let imageData: ImageData | null = null;
+    const ctx = canvas.getContext("2d");
+    if (ctx && canvas.width > 0 && canvas.height > 0) {
+      try {
+        imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      } catch (error) {
+        console.warn("Failed to backup canvas data:", error);
+      }
+    }
+
     // 캔버스 실제 크기 설정
     canvas.width = containerWidth * pixelRatio;
     canvas.height = containerHeight * pixelRatio;
@@ -79,16 +90,210 @@ const Index = () => {
     canvas.style.width = `${containerWidth}px`;
     canvas.style.height = `${containerHeight}px`;
 
-    // 컨텍스트 스케일 조정
-    const ctx = canvas.getContext("2d");
+    // 컨텍스트 스케일 조정 및 기본 설정
     if (ctx) {
       ctx.scale(pixelRatio, pixelRatio);
       ctx.imageSmoothingEnabled = true;
       ctx.imageSmoothingQuality = "high";
+
+      // 흰색 배경 설정 (중요!)
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, containerWidth, containerHeight);
+
+      // 기존 내용 복원 (있는 경우)
+      if (imageData && imageData.width > 0 && imageData.height > 0) {
+        try {
+          // 크기가 다르면 스케일링해서 복원
+          const scaleX = containerWidth / (imageData.width / pixelRatio);
+          const scaleY = containerHeight / (imageData.height / pixelRatio);
+
+          if (Math.abs(scaleX - 1) > 0.01 || Math.abs(scaleY - 1) > 0.01) {
+            // 임시 캔버스에 기존 데이터 그리기
+            const tempCanvas = document.createElement("canvas");
+            const tempCtx = tempCanvas.getContext("2d");
+            tempCanvas.width = imageData.width;
+            tempCanvas.height = imageData.height;
+
+            if (tempCtx) {
+              tempCtx.putImageData(imageData, 0, 0);
+              ctx.save();
+              ctx.scale(scaleX, scaleY);
+              ctx.drawImage(tempCanvas, 0, 0);
+              ctx.restore();
+            }
+          } else {
+            // 1:1 크기면 직접 복원
+            ctx.putImageData(imageData, 0, 0);
+          }
+        } catch (error) {
+          console.warn("Failed to restore canvas data:", error);
+        }
+      }
     }
 
     return { width: containerWidth, height: containerHeight, pixelRatio };
   }, []);
+
+  // 개선된 썸네일 생성 함수
+  const generateThumbnail = useCallback((): string => {
+    const drawingCanvas = canvasRef.current;
+    const physicsCanvas = physicsCanvasRef.current;
+
+    if (!drawingCanvas) {
+      console.warn("Canvas element not found for thumbnail generation");
+      return "";
+    }
+
+    try {
+      // 썸네일 캔버스 생성
+      const thumbnailCanvas = document.createElement("canvas");
+      const ctx = thumbnailCanvas.getContext("2d");
+      thumbnailCanvas.width = 200;
+      thumbnailCanvas.height = 150;
+
+      if (!ctx) return "";
+
+      // 흰색 배경 추가 (투명 배경 대신)
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, thumbnailCanvas.width, thumbnailCanvas.height);
+
+      // 컨테이너 크기 가져오기
+      const container = drawingCanvas.parentElement;
+      if (!container) return "";
+
+      const containerRect = container.getBoundingClientRect();
+      const scaleX = thumbnailCanvas.width / containerRect.width;
+      const scaleY = thumbnailCanvas.height / containerRect.height;
+
+      // 그리기 캔버스 내용 추가 (펜 드로잉 등)
+      if (drawingCanvas.width > 0 && drawingCanvas.height > 0) {
+        ctx.drawImage(
+          drawingCanvas,
+          0,
+          0,
+          thumbnailCanvas.width,
+          thumbnailCanvas.height
+        );
+      }
+
+      // Physics 캔버스 내용 추가 (스티커, 사진 등)
+      if (
+        physicsCanvas &&
+        physicsCanvas.width > 0 &&
+        physicsCanvas.height > 0
+      ) {
+        // Physics 캔버스를 썸네일 캔버스 위에 오버레이
+        ctx.globalCompositeOperation = "source-over";
+        ctx.drawImage(
+          physicsCanvas,
+          0,
+          0,
+          thumbnailCanvas.width,
+          thumbnailCanvas.height
+        );
+      }
+
+      // 수동으로 스티커와 사진 렌더링 (Physics 캔버스가 비어있을 경우를 대비)
+      const renderObjectsManually = () => {
+        // 사진 렌더링
+        photos.forEach((photo) => {
+          if (photo.image && photo.isLoaded && photo.image.complete) {
+            try {
+              ctx.save();
+              const x = photo.x * scaleX;
+              const y = photo.y * scaleY;
+              const width = photo.width * scaleX;
+              const height = photo.height * scaleY;
+
+              ctx.drawImage(photo.image, x, y, width, height);
+              ctx.restore();
+            } catch (error) {
+              console.warn("Failed to render photo in thumbnail:", error);
+            }
+          }
+        });
+
+        // 스티커 렌더링 (기본 도형만)
+        stickers.forEach((sticker) => {
+          try {
+            ctx.save();
+            const x = sticker.x * scaleX;
+            const y = sticker.y * scaleY;
+            const size = sticker.size * Math.min(scaleX, scaleY);
+
+            ctx.fillStyle = sticker.color;
+
+            switch (sticker.shape) {
+              case "circle":
+                ctx.beginPath();
+                ctx.arc(x, y, size / 2, 0, 2 * Math.PI);
+                ctx.fill();
+                break;
+              case "square":
+                ctx.fillRect(x - size / 2, y - size / 2, size, size);
+                break;
+              case "triangle":
+                ctx.beginPath();
+                ctx.moveTo(x, y - size / 2);
+                ctx.lineTo(x + size / 2, y + size / 2);
+                ctx.lineTo(x - size / 2, y + size / 2);
+                ctx.closePath();
+                ctx.fill();
+                break;
+              // 다른 스티커들은 단순한 원으로 표시
+              default:
+                ctx.beginPath();
+                ctx.arc(x, y, size / 4, 0, 2 * Math.PI);
+                ctx.fill();
+                break;
+            }
+            ctx.restore();
+          } catch (error) {
+            console.warn("Failed to render sticker in thumbnail:", error);
+          }
+        });
+      };
+
+      // Physics 캔버스가 비어있거나 문제가 있으면 수동 렌더링
+      if (
+        !physicsCanvas ||
+        physicsCanvas.width === 0 ||
+        physicsCanvas.height === 0
+      ) {
+        renderObjectsManually();
+      }
+
+      return thumbnailCanvas.toDataURL("image/jpeg", 0.8);
+    } catch (error) {
+      console.error("Failed to generate thumbnail:", error);
+
+      // 에러 발생 시 기본 썸네일 생성
+      try {
+        const fallbackCanvas = document.createElement("canvas");
+        const fallbackCtx = fallbackCanvas.getContext("2d");
+        fallbackCanvas.width = 200;
+        fallbackCanvas.height = 150;
+
+        if (fallbackCtx) {
+          // 연한 회색 배경
+          fallbackCtx.fillStyle = "#f5f5f5";
+          fallbackCtx.fillRect(0, 0, 200, 150);
+
+          // 텍스트 표시
+          fallbackCtx.fillStyle = "#999";
+          fallbackCtx.font = "14px sans-serif";
+          fallbackCtx.textAlign = "center";
+          fallbackCtx.fillText("미리보기 없음", 100, 75);
+
+          return fallbackCanvas.toDataURL("image/jpeg", 0.8);
+        }
+      } catch (fallbackError) {
+        console.error("Failed to generate fallback thumbnail:", fallbackError);
+      }
+
+      return "";
+    }
+  }, [photos, stickers]);
 
   // 캔버스 데이터 복원 함수
   const restoreCanvasData = useCallback(
@@ -102,11 +307,10 @@ const Index = () => {
 
           const newPhoto: Photo = {
             ...photoData,
-            image: img, // HTMLImageElement 객체 재생성
-            isLoaded: false, // 처음에는 false로 설정
+            image: img,
+            isLoaded: false,
           };
 
-          // 이미지 로딩 완료 처리
           img.onload = () => {
             setPhotos((prev) =>
               prev.map((p) =>
@@ -137,18 +341,14 @@ const Index = () => {
 
       const img = new Image();
       img.onload = () => {
-        // 캔버스 초기화
         const dimensions = initializeCanvas();
         if (!dimensions) return;
 
-        // 캔버스 클리어
         ctx.clearRect(0, 0, dimensions.width, dimensions.height);
 
-        // 저장된 크기 정보가 있으면 사용, 없으면 현재 캔버스 크기 사용
         const savedWidth = canvasState.canvasWidth || dimensions.width;
         const savedHeight = canvasState.canvasHeight || dimensions.height;
 
-        // 크기가 다른 경우 스케일 조정
         const scaleX = dimensions.width / savedWidth;
         const scaleY = dimensions.height / savedHeight;
 
@@ -158,7 +358,6 @@ const Index = () => {
           ctx.drawImage(img, 0, 0, savedWidth, savedHeight);
           ctx.restore();
         } else {
-          // 1:1 크기인 경우 그대로 그리기
           ctx.drawImage(img, 0, 0, dimensions.width, dimensions.height);
         }
       };
@@ -190,7 +389,6 @@ const Index = () => {
 
             if (canvasState.stickers) setStickers(canvasState.stickers);
 
-            // 캔버스가 준비된 후 이미지 데이터 복원
             setTimeout(() => {
               restoreCanvasData(canvasState);
             }, 300);
@@ -225,7 +423,6 @@ const Index = () => {
   // 윈도우 리사이즈 이벤트 핸들링
   useEffect(() => {
     const handleResize = () => {
-      // 리사이즈 시 캔버스 재초기화
       setTimeout(() => {
         initializeCanvas();
       }, 100);
@@ -239,21 +436,20 @@ const Index = () => {
   const serializeCanvasData = useCallback((): string => {
     const canvasElement = canvasRef.current;
 
-    // 사진 데이터를 직렬화 가능한 형태로 변환
     const serializablePhotos: SerializablePhoto[] = photos.map((photo) => ({
       id: photo.id,
       x: photo.x,
       y: photo.y,
       width: photo.width,
       height: photo.height,
-      src: photo.src, // HTMLImageElement 대신 src URL 저장
+      src: photo.src,
       isLoaded: photo.isLoaded,
     }));
 
     const createCanvasData = (canvasDataURL: string): string => {
       const canvasData: CanvasState = {
         stickers,
-        photos: serializablePhotos, // 직렬화된 사진 데이터
+        photos: serializablePhotos,
         canvasDataURL,
         canvasWidth: canvasElement?.offsetWidth || 0,
         canvasHeight: canvasElement?.offsetHeight || 0,
@@ -276,37 +472,6 @@ const Index = () => {
       return createCanvasData("");
     }
   }, [stickers, photos]);
-
-  // 썸네일 생성
-  const generateThumbnail = useCallback((): string => {
-    const canvasElement = canvasRef.current;
-    if (!canvasElement) {
-      console.warn("Canvas element not found for thumbnail generation");
-      return "";
-    }
-
-    try {
-      const thumbnailCanvas = document.createElement("canvas");
-      const ctx = thumbnailCanvas.getContext("2d");
-      thumbnailCanvas.width = 200;
-      thumbnailCanvas.height = 150;
-
-      if (ctx) {
-        ctx.drawImage(
-          canvasElement,
-          0,
-          0,
-          thumbnailCanvas.width,
-          thumbnailCanvas.height
-        );
-        return thumbnailCanvas.toDataURL("image/jpeg", 0.8);
-      }
-    } catch (error) {
-      console.error("Failed to generate thumbnail:", error);
-    }
-
-    return "";
-  }, []);
 
   // 문서 저장
   const saveDrawing = useCallback(async (): Promise<void> => {

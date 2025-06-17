@@ -395,13 +395,13 @@ const Physics = forwardRef<HTMLCanvasElement, PhysicsProps>(
       });
 
       let animationFrameId: number;
-      // Physics.tsx의 렌더링 부분 수정 (411번째 줄 근처)
+      // Physics.tsx의 렌더링 부분 개선 (render 함수 내부)
       const render = () => {
         const { width, height } = canvasDimensionsRef.current;
         if (width > 0 && height > 0) {
           ctx.clearRect(0, 0, width, height);
 
-          // 사진 렌더링 - 타입 안전성 강화
+          // 사진 렌더링 - 타입 안전성 및 에러 처리 강화
           photos.forEach((photo) => {
             const body = bodiesRef.current[`photo-${photo.id}`];
             if (!body) return;
@@ -414,7 +414,27 @@ const Physics = forwardRef<HTMLCanvasElement, PhysicsProps>(
 
             // 이미지 로딩 상태 확인
             if (!photo.image.complete || photo.image.naturalWidth === 0) {
-              console.warn(`Image not loaded for photo ${photo.id}`);
+              // 이미지가 아직 로딩 중이면 로딩 표시
+              ctx.save();
+              ctx.translate(body.position.x, body.position.y);
+              ctx.rotate(body.angle);
+
+              // 로딩 중 표시 (회색 박스)
+              ctx.fillStyle = "#f0f0f0";
+              ctx.fillRect(
+                -photo.width / 2,
+                -photo.height / 2,
+                photo.width,
+                photo.height
+              );
+
+              // 로딩 텍스트
+              ctx.fillStyle = "#666";
+              ctx.font = "12px sans-serif";
+              ctx.textAlign = "center";
+              ctx.fillText("로딩중...", 0, 0);
+
+              ctx.restore();
               return;
             }
 
@@ -425,7 +445,7 @@ const Physics = forwardRef<HTMLCanvasElement, PhysicsProps>(
 
               // drawImage 호출 전 한 번 더 확인
               ctx.drawImage(
-                photo.image, // 이제 안전하게 HTMLImageElement
+                photo.image,
                 -photo.width / 2,
                 -photo.height / 2,
                 photo.width,
@@ -435,69 +455,113 @@ const Physics = forwardRef<HTMLCanvasElement, PhysicsProps>(
             } catch (error) {
               console.error(`Failed to draw photo ${photo.id}:`, error);
               ctx.restore(); // 에러 발생 시에도 컨텍스트 복원
+
+              // 에러 발생 시 에러 표시
+              ctx.save();
+              ctx.translate(body.position.x, body.position.y);
+              ctx.rotate(body.angle);
+
+              // 에러 표시 (빨간 박스)
+              ctx.fillStyle = "#ffebee";
+              ctx.fillRect(
+                -photo.width / 2,
+                -photo.height / 2,
+                photo.width,
+                photo.height
+              );
+              ctx.strokeStyle = "#f44336";
+              ctx.lineWidth = 2;
+              ctx.strokeRect(
+                -photo.width / 2,
+                -photo.height / 2,
+                photo.width,
+                photo.height
+              );
+
+              // 에러 텍스트
+              ctx.fillStyle = "#f44336";
+              ctx.font = "12px sans-serif";
+              ctx.textAlign = "center";
+              ctx.fillText("오류", 0, 0);
+
+              ctx.restore();
             }
           });
 
+          // 스티커 렌더링은 기존과 동일하지만 에러 처리 추가
           stickers.forEach((sticker) => {
             const body = bodiesRef.current[`sticker-${sticker.id}`];
             if (!body) return;
 
-            ctx.save();
-            ctx.translate(body.position.x, body.position.y);
-            ctx.rotate(body.angle);
+            try {
+              ctx.save();
+              ctx.translate(body.position.x, body.position.y);
+              ctx.rotate(body.angle);
 
-            const s = sticker.size;
-            if (sticker.shape.startsWith("sticker")) {
-              const cachedImage = stickerImageCache.get(sticker.shape);
-              if (cachedImage && cachedImage.complete) {
-                ctx.drawImage(cachedImage, -s / 2, -s / 2, s, s);
-              }
-            } else if (sticker.shape.startsWith("cat")) {
-              const catIndex = parseInt(sticker.shape.replace("cat", "")) - 1;
-              const cat = catStickers[catIndex];
-              if (cat) {
+              const s = sticker.size;
+              if (sticker.shape.startsWith("sticker")) {
+                const cachedImage = stickerImageCache.get(sticker.shape);
+                if (cachedImage && cachedImage.complete) {
+                  ctx.drawImage(cachedImage, -s / 2, -s / 2, s, s);
+                } else {
+                  // 스티커 이미지가 로드되지 않았을 때 기본 도형으로 표시
+                  ctx.fillStyle = sticker.color;
+                  ctx.fillRect(-s / 2, -s / 2, s, s);
+                }
+              } else if (sticker.shape.startsWith("cat")) {
                 const img = stickerImageCache.get(sticker.shape);
                 if (img && img.complete) {
                   const height = s * 1.2;
                   ctx.drawImage(img, -s / 2, -height / 2, s, height);
                 } else {
+                  // 고양이 스티커 이미지가 로드되지 않았을 때
                   ctx.fillStyle = sticker.color;
                   ctx.fillRect(-s / 2, -s / 2, s, s);
                 }
+              } else {
+                // 기본 도형 스티커들
+                ctx.fillStyle = sticker.color;
+                switch (sticker.shape) {
+                  case "circle":
+                    ctx.beginPath();
+                    ctx.arc(0, 0, s / 2, 0, 2 * Math.PI);
+                    ctx.fill();
+                    break;
+                  case "square":
+                    ctx.fillRect(-s / 2, -s / 2, s, s);
+                    break;
+                  case "triangle":
+                    ctx.beginPath();
+                    ctx.moveTo(0, -s / 2);
+                    ctx.lineTo(s / 2, s / 2);
+                    ctx.lineTo(-s / 2, s / 2);
+                    ctx.closePath();
+                    ctx.fill();
+                    break;
+                  case "heart":
+                    ctx.beginPath();
+                    ctx.moveTo(0, -s / 4);
+                    ctx.bezierCurveTo(s / 2, -s / 2, s / 2, s / 4, 0, s / 2);
+                    ctx.bezierCurveTo(-s / 2, s / 4, -s / 2, -s / 2, 0, -s / 4);
+                    ctx.closePath();
+                    ctx.fill();
+                    break;
+                  case "star":
+                    renderStar(ctx, 0, 0, 5, s / 2, s / 4);
+                    break;
+                  default:
+                    // 알 수 없는 스티커는 원으로 표시
+                    ctx.beginPath();
+                    ctx.arc(0, 0, s / 4, 0, 2 * Math.PI);
+                    ctx.fill();
+                    break;
+                }
               }
-            } else {
-              ctx.fillStyle = sticker.color;
-              switch (sticker.shape) {
-                case "circle":
-                  ctx.beginPath();
-                  ctx.arc(0, 0, s / 2, 0, 2 * Math.PI);
-                  ctx.fill();
-                  break;
-                case "square":
-                  ctx.fillRect(-s / 2, -s / 2, s, s);
-                  break;
-                case "triangle":
-                  ctx.beginPath();
-                  ctx.moveTo(0, -s / 2);
-                  ctx.lineTo(s / 2, s / 2);
-                  ctx.lineTo(-s / 2, s / 2);
-                  ctx.closePath();
-                  ctx.fill();
-                  break;
-                case "heart":
-                  ctx.beginPath();
-                  ctx.moveTo(0, -s / 4);
-                  ctx.bezierCurveTo(s / 2, -s / 2, s / 2, s / 4, 0, s / 2);
-                  ctx.bezierCurveTo(-s / 2, s / 4, -s / 2, -s / 2, 0, -s / 4);
-                  ctx.closePath();
-                  ctx.fill();
-                  break;
-                case "star":
-                  renderStar(ctx, 0, 0, 5, s / 2, s / 4);
-                  break;
-              }
+              ctx.restore();
+            } catch (error) {
+              console.error(`Failed to draw sticker ${sticker.id}:`, error);
+              ctx.restore(); // 에러 발생 시에도 컨텍스트 복원
             }
-            ctx.restore();
           });
         }
 
