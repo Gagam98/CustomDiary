@@ -4,19 +4,18 @@ import { BsCircle, BsSquare, BsTriangle, BsHeart } from "react-icons/bs";
 import { stickerSvgs } from "../../../components/stickerSvgs";
 import { catStickers } from "../../../components/catStickers";
 
+// TopToolbar의 Sticker 타입과 일치하도록 수정
+interface Sticker {
+  id: string;
+  shape: string;
+  x: number;
+  y: number;
+  size: number;
+  color: string;
+}
+
 interface StickerToolProps {
-  setStickers: React.Dispatch<
-    React.SetStateAction<
-      Array<{
-        id: string;
-        shape: string;
-        x: number;
-        y: number;
-        size: number;
-        color: string;
-      }>
-    >
-  >;
+  setStickers: React.Dispatch<React.SetStateAction<Sticker[]>>;
   canvasRef: React.RefObject<HTMLCanvasElement | null>;
   anchorRef: React.RefObject<HTMLElement | null>;
   onRequestClose: () => void;
@@ -34,7 +33,7 @@ const StickerTool: React.FC<StickerToolProps> = ({
     "shapes" | "basic" | "cats"
   >("shapes");
 
-  // useMemo 대신 useRef 사용
+  // 고양이 이미지 캐시
   const catImageCache = useRef(new Map<string, HTMLImageElement>()).current;
 
   useEffect(() => {
@@ -66,30 +65,34 @@ const StickerTool: React.FC<StickerToolProps> = ({
 
   const TOOLBAR_HEIGHT = 88;
 
-  // 컴포넌트 최상단에 이미지 프리로딩 추가
+  // 고양이 스티커 이미지 사전 로드
   useEffect(() => {
-    // 고양이 스티커 이미지 사전 로드
     catStickers.forEach((cat, index) => {
-      const img = new Image();
-      img.src = cat.src;
-      img.onload = () => {
-        catImageCache.set(`cat${index + 1}`, img);
-      };
+      if (!catImageCache.has(`cat${index + 1}`)) {
+        const img = new Image();
+        img.onload = () => {
+          catImageCache.set(`cat${index + 1}`, img);
+        };
+        img.onerror = (error) => {
+          console.error(`Failed to load cat sticker ${index + 1}:`, error);
+        };
+        img.src = cat.src;
+      }
     });
-  }, []); // 의존성 배열 비워두기
+  }, [catImageCache]);
 
   const selectSticker = (shape: string) => {
     if (!canvasRef.current) return;
     const rect = canvasRef.current.getBoundingClientRect();
 
-    // 스티커 크기와 물리 속성 최적화
+    // 스티커 크기 최적화
     const size = shape.startsWith("cat")
       ? 80 // 고양이 스티커 크기
       : shape.startsWith("sticker")
       ? 60 // 기본 스티커 크기
-      : Math.random() * 20 + 40; // 도형 스티커 크기 감소 (기존: 40~60 -> 변경: 25~35)
+      : Math.random() * 20 + 40; // 도형 스티커 크기
 
-    const newSticker = {
+    const newSticker: Sticker = {
       id: `sticker-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
       shape,
       x: Math.random() * (rect.width * 0.8) + rect.width * 0.1,
@@ -97,6 +100,7 @@ const StickerTool: React.FC<StickerToolProps> = ({
       size,
       color: getRandomColor(),
     };
+
     setStickers((prev) => [...prev, newSticker]);
     onRequestClose();
   };
@@ -130,6 +134,10 @@ const StickerTool: React.FC<StickerToolProps> = ({
           width="20"
           height="20"
           style={{ objectFit: "contain" }}
+          onError={(e) => {
+            console.error(`Failed to load sticker image: sticker${i + 1}`);
+            e.currentTarget.style.display = "none";
+          }}
         />
       ),
     })),
@@ -154,6 +162,10 @@ const StickerTool: React.FC<StickerToolProps> = ({
             width="20"
             height="20"
             style={{ objectFit: "contain" }}
+            onError={(e) => {
+              console.error(`Failed to load cat sticker image: cat${i + 1}`);
+              e.currentTarget.style.display = "none";
+            }}
           />
         ),
       }));
@@ -180,8 +192,8 @@ const StickerTool: React.FC<StickerToolProps> = ({
       const column = index % columns;
       const row = Math.floor(index / columns);
 
-      const newSticker = {
-        id: `sticker-${Date.now()}-${Math.random()
+      const newSticker: Sticker = {
+        id: `sticker-${Date.now()}-${index}-${Math.random()
           .toString(36)
           .substring(2, 9)}`,
         shape: sticker.name,
@@ -190,6 +202,7 @@ const StickerTool: React.FC<StickerToolProps> = ({
         size,
         color: getRandomColor(),
       };
+
       setStickers((prev) => [...prev, newSticker]);
     });
     onRequestClose();
@@ -206,6 +219,7 @@ const StickerTool: React.FC<StickerToolProps> = ({
         <button
           onClick={onRequestClose}
           className="text-gray-500 hover:text-gray-700"
+          aria-label="닫기"
         >
           ✕
         </button>
@@ -235,16 +249,17 @@ const StickerTool: React.FC<StickerToolProps> = ({
       <div className="grid grid-cols-4 gap-2 mb-4">
         {getStickersForCategory().map((sticker, index) => (
           <button
-            key={`sticker-${index}`}
-            className="w-12 h-12 border border-gray-300 rounded flex items-center justify-center hover:bg-blue-50"
+            key={`${selectedCategory}-${sticker.name}-${index}`}
+            className="w-12 h-12 border border-gray-300 rounded flex items-center justify-center hover:bg-blue-50 transition-colors"
             onClick={() => selectSticker(sticker.name)}
+            aria-label={`${sticker.name} 스티커 추가`}
           >
             {sticker.icon}
           </button>
         ))}
       </div>
 
-      {/* All 버튼을 하단으로 이동 */}
+      {/* 모든 스티커 추가 버튼 */}
       <div>
         <button
           onClick={addAllStickers}

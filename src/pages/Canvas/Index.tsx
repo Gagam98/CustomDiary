@@ -8,10 +8,21 @@ import Matter from "matter-js";
 import { drawingAPI, CreateDrawingRequest } from "../../utils/apiService";
 import { getCurrentUser } from "../../utils/authUtils";
 
+// 직렬화 가능한 사진 데이터 타입
+interface SerializablePhoto {
+  id: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  src: string;
+  isLoaded?: boolean;
+}
+
 // 캔버스 상태 타입 정의
 interface CanvasState {
   stickers?: Sticker[];
-  photos?: Photo[];
+  photos?: SerializablePhoto[]; // Photo 대신 SerializablePhoto 사용
   canvasDataURL?: string;
   canvasWidth?: number;
   canvasHeight?: number;
@@ -83,6 +94,42 @@ const Index = () => {
   const restoreCanvasData = useCallback(
     (canvasState: CanvasState) => {
       const canvas = canvasRef.current;
+
+      // 사진 데이터 복원
+      if (canvasState.photos) {
+        const restoredPhotos: Photo[] = canvasState.photos.map((photoData) => {
+          const img = new Image();
+
+          const newPhoto: Photo = {
+            ...photoData,
+            image: img, // HTMLImageElement 객체 재생성
+            isLoaded: false, // 처음에는 false로 설정
+          };
+
+          // 이미지 로딩 완료 처리
+          img.onload = () => {
+            setPhotos((prev) =>
+              prev.map((p) =>
+                p.id === newPhoto.id ? { ...p, isLoaded: true } : p
+              )
+            );
+          };
+
+          img.onerror = (error) => {
+            console.error(
+              `Failed to load image for photo ${photoData.id}:`,
+              error
+            );
+          };
+
+          img.src = photoData.src;
+          return newPhoto;
+        });
+
+        setPhotos(restoredPhotos);
+      }
+
+      // 캔버스 이미지 복원
       if (!canvas || !canvasState.canvasDataURL) return;
 
       const ctx = canvas.getContext("2d");
@@ -142,7 +189,6 @@ const Index = () => {
             );
 
             if (canvasState.stickers) setStickers(canvasState.stickers);
-            if (canvasState.photos) setPhotos(canvasState.photos);
 
             // 캔버스가 준비된 후 이미지 데이터 복원
             setTimeout(() => {
@@ -193,42 +239,41 @@ const Index = () => {
   const serializeCanvasData = useCallback((): string => {
     const canvasElement = canvasRef.current;
 
-    const createEmptyCanvasData = (): string => {
-      return JSON.stringify({
+    // 사진 데이터를 직렬화 가능한 형태로 변환
+    const serializablePhotos: SerializablePhoto[] = photos.map((photo) => ({
+      id: photo.id,
+      x: photo.x,
+      y: photo.y,
+      width: photo.width,
+      height: photo.height,
+      src: photo.src, // HTMLImageElement 대신 src URL 저장
+      isLoaded: photo.isLoaded,
+    }));
+
+    const createCanvasData = (canvasDataURL: string): string => {
+      const canvasData: CanvasState = {
         stickers,
-        photos,
-        canvasDataURL: "",
-        canvasWidth: 0,
-        canvasHeight: 0,
+        photos: serializablePhotos, // 직렬화된 사진 데이터
+        canvasDataURL,
+        canvasWidth: canvasElement?.offsetWidth || 0,
+        canvasHeight: canvasElement?.offsetHeight || 0,
         pixelRatio: window.devicePixelRatio || 1,
         timestamp: new Date().toISOString(),
-      });
+      };
+      return JSON.stringify(canvasData);
     };
 
     if (!canvasElement) {
       console.warn("Canvas element not found, creating empty canvas data");
-      return createEmptyCanvasData();
+      return createCanvasData("");
     }
 
     try {
       const canvasDataURL = canvasElement.toDataURL("image/png");
-      const canvasWidth = canvasElement.offsetWidth;
-      const canvasHeight = canvasElement.offsetHeight;
-
-      const canvasData: CanvasState = {
-        stickers,
-        photos,
-        canvasDataURL,
-        canvasWidth,
-        canvasHeight,
-        pixelRatio: window.devicePixelRatio || 1,
-        timestamp: new Date().toISOString(),
-      };
-
-      return JSON.stringify(canvasData);
+      return createCanvasData(canvasDataURL);
     } catch (error) {
       console.error("Failed to get canvas data URL:", error);
-      return createEmptyCanvasData();
+      return createCanvasData("");
     }
   }, [stickers, photos]);
 

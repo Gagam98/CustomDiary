@@ -395,27 +395,47 @@ const Physics = forwardRef<HTMLCanvasElement, PhysicsProps>(
       });
 
       let animationFrameId: number;
+      // Physics.tsx의 렌더링 부분 수정 (411번째 줄 근처)
       const render = () => {
-        // 캔버스 크기를 컨테이너 크기에 맞춤 (window.innerWidth/Height 대신)
         const { width, height } = canvasDimensionsRef.current;
         if (width > 0 && height > 0) {
           ctx.clearRect(0, 0, width, height);
 
+          // 사진 렌더링 - 타입 안전성 강화
           photos.forEach((photo) => {
             const body = bodiesRef.current[`photo-${photo.id}`];
             if (!body) return;
 
-            ctx.save();
-            ctx.translate(body.position.x, body.position.y);
-            ctx.rotate(body.angle);
-            ctx.drawImage(
-              photo.image,
-              -photo.width / 2,
-              -photo.height / 2,
-              photo.width,
-              photo.height
-            );
-            ctx.restore();
+            // 이미지 유효성 검사 추가
+            if (!photo.image || !(photo.image instanceof HTMLImageElement)) {
+              console.warn(`Invalid image for photo ${photo.id}`);
+              return;
+            }
+
+            // 이미지 로딩 상태 확인
+            if (!photo.image.complete || photo.image.naturalWidth === 0) {
+              console.warn(`Image not loaded for photo ${photo.id}`);
+              return;
+            }
+
+            try {
+              ctx.save();
+              ctx.translate(body.position.x, body.position.y);
+              ctx.rotate(body.angle);
+
+              // drawImage 호출 전 한 번 더 확인
+              ctx.drawImage(
+                photo.image, // 이제 안전하게 HTMLImageElement
+                -photo.width / 2,
+                -photo.height / 2,
+                photo.width,
+                photo.height
+              );
+              ctx.restore();
+            } catch (error) {
+              console.error(`Failed to draw photo ${photo.id}:`, error);
+              ctx.restore(); // 에러 발생 시에도 컨텍스트 복원
+            }
           });
 
           stickers.forEach((sticker) => {

@@ -141,9 +141,10 @@ const GlueTool: FC<GlueToolProps> = ({
     };
 
     const handleDoubleClick = (e: MouseEvent) => {
+      const rect = canvas.getBoundingClientRect();
       const mousePosition = {
-        x: e.clientX,
-        y: e.clientY,
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top,
       };
 
       const bodies = Matter.Composite.allBodies(engineRef.current!.world);
@@ -186,9 +187,10 @@ const GlueTool: FC<GlueToolProps> = ({
       if (!isDragging || !selectedBody || fixedBodies.has(selectedBody.id))
         return;
 
+      const rect = canvas.getBoundingClientRect();
       Matter.Body.setPosition(selectedBody, {
-        x: e.clientX,
-        y: e.clientY,
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top,
       });
     };
 

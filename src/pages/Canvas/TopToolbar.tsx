@@ -27,13 +27,16 @@ export interface Sticker {
   color: string;
 }
 
+// Photo 타입 정의 - src와 isLoaded 속성 추가
 export interface Photo {
   id: string;
-  image: HTMLImageElement;
   x: number;
   y: number;
   width: number;
   height: number;
+  image: HTMLImageElement; // 반드시 HTMLImageElement여야 함
+  src: string; // 원본 이미지 URL도 보관
+  isLoaded?: boolean; // 이미지 로딩 상태 추가
 }
 
 interface TopToolbarProps {
@@ -69,6 +72,35 @@ const TopToolbar: FC<TopToolbarProps> = ({
   const stickerButtonRef = useRef<HTMLButtonElement | null>(null);
   const colorOptions = ["#FF0000", "#0000FF", "#000000", "#FFFFFF"];
   const photoToolRef = useRef<HTMLInputElement>(null);
+
+  // 사진 업로드 핸들러 함수 - props에서 받은 setPhotos 사용
+  const handlePhotoUpload = (file: File) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const newPhoto: Photo = {
+          id: `photo-${Date.now()}`,
+          x: Math.random() * 400 + 100,
+          y: Math.random() * 200 + 100,
+          width: Math.min(img.width, 200),
+          height: Math.min(img.height, 200),
+          image: img, // HTMLImageElement 객체
+          src: e.target?.result as string,
+          isLoaded: true,
+        };
+
+        setPhotos((prev) => [...prev, newPhoto]);
+      };
+
+      img.onerror = () => {
+        console.error("Failed to load image");
+      };
+
+      img.src = e.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+  };
 
   // 캔버스 컨텍스트 초기화 - 이전 상태 유지하도록 수정
   useEffect(() => {
@@ -365,6 +397,7 @@ const TopToolbar: FC<TopToolbarProps> = ({
           setPhotos={setPhotos}
           canvasRef={canvasRef}
           ref={photoToolRef}
+          onPhotoUpload={handlePhotoUpload}
         />
       )}
       <TextTool activeTool={activeTool} canvasRef={canvasRef} />
