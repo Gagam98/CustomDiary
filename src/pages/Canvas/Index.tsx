@@ -56,7 +56,7 @@ const Index = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
-  // 캔버스 초기화 함수 (배경색 설정 포함)
+  // 캔버스 초기화 함수 (투명 배경으로 수정)
   const initializeCanvas = useCallback((): CanvasDimensions | undefined => {
     const canvas = canvasRef.current;
     if (!canvas) return undefined;
@@ -96,9 +96,9 @@ const Index = () => {
       ctx.imageSmoothingEnabled = true;
       ctx.imageSmoothingQuality = "high";
 
-      // 흰색 배경 설정 (중요!)
-      ctx.fillStyle = "#ffffff";
-      ctx.fillRect(0, 0, containerWidth, containerHeight);
+      // 흰색 배경 제거 - 투명 배경 유지
+      // ctx.fillStyle = "#ffffff";
+      // ctx.fillRect(0, 0, containerWidth, containerHeight);
 
       // 기존 내용 복원 (있는 경우)
       if (imageData && imageData.width > 0 && imageData.height > 0) {
@@ -134,7 +134,7 @@ const Index = () => {
     return { width: containerWidth, height: containerHeight, pixelRatio };
   }, []);
 
-  // 개선된 썸네일 생성 함수
+  // 개선된 썸네일 생성 함수 - 흰색 배경으로 합성
   const generateThumbnail = useCallback((): string => {
     const drawingCanvas = canvasRef.current;
     const physicsCanvas = physicsCanvasRef.current;
@@ -153,7 +153,7 @@ const Index = () => {
 
       if (!ctx) return "";
 
-      // 흰색 배경 추가 (투명 배경 대신)
+      // 썸네일에만 흰색 배경 추가 (실제 캔버스는 투명 유지)
       ctx.fillStyle = "#ffffff";
       ctx.fillRect(0, 0, thumbnailCanvas.width, thumbnailCanvas.height);
 
@@ -165,25 +165,12 @@ const Index = () => {
       const scaleX = thumbnailCanvas.width / containerRect.width;
       const scaleY = thumbnailCanvas.height / containerRect.height;
 
-      // 그리기 캔버스 내용 추가 (펜 드로잉 등)
-      if (drawingCanvas.width > 0 && drawingCanvas.height > 0) {
-        ctx.drawImage(
-          drawingCanvas,
-          0,
-          0,
-          thumbnailCanvas.width,
-          thumbnailCanvas.height
-        );
-      }
-
-      // Physics 캔버스 내용 추가 (스티커, 사진 등)
+      // Physics 캔버스 내용 먼저 추가 (스티커, 사진 등이 뒤에 있도록)
       if (
         physicsCanvas &&
         physicsCanvas.width > 0 &&
         physicsCanvas.height > 0
       ) {
-        // Physics 캔버스를 썸네일 캔버스 위에 오버레이
-        ctx.globalCompositeOperation = "source-over";
         ctx.drawImage(
           physicsCanvas,
           0,
@@ -193,9 +180,21 @@ const Index = () => {
         );
       }
 
-      // 수동으로 스티커와 사진 렌더링 (Physics 캔버스가 비어있을 경우를 대비)
+      // 그리기 캔버스 내용 위에 추가 (펜 드로잉 등이 앞에 있도록)
+      if (drawingCanvas.width > 0 && drawingCanvas.height > 0) {
+        ctx.globalCompositeOperation = "source-over";
+        ctx.drawImage(
+          drawingCanvas,
+          0,
+          0,
+          thumbnailCanvas.width,
+          thumbnailCanvas.height
+        );
+      }
+
+      // 수동 렌더링 (Physics 캔버스가 비어있을 경우)
       const renderObjectsManually = () => {
-        // 사진 렌더링
+        // 사진 렌더링 (가장 뒤)
         photos.forEach((photo) => {
           if (photo.image && photo.isLoaded && photo.image.complete) {
             try {
@@ -213,7 +212,7 @@ const Index = () => {
           }
         });
 
-        // 스티커 렌더링 (기본 도형만)
+        // 스티커 렌더링 (사진 위)
         stickers.forEach((sticker) => {
           try {
             ctx.save();
@@ -240,7 +239,6 @@ const Index = () => {
                 ctx.closePath();
                 ctx.fill();
                 break;
-              // 다른 스티커들은 단순한 원으로 표시
               default:
                 ctx.beginPath();
                 ctx.arc(x, y, size / 4, 0, 2 * Math.PI);
@@ -254,7 +252,7 @@ const Index = () => {
         });
       };
 
-      // Physics 캔버스가 비어있거나 문제가 있으면 수동 렌더링
+      // Physics 캔버스가 비어있으면 수동 렌더링
       if (
         !physicsCanvas ||
         physicsCanvas.width === 0 ||
@@ -344,6 +342,7 @@ const Index = () => {
         const dimensions = initializeCanvas();
         if (!dimensions) return;
 
+        // 투명 배경으로 클리어 (흰색 배경 제거)
         ctx.clearRect(0, 0, dimensions.width, dimensions.height);
 
         const savedWidth = canvasState.canvasWidth || dimensions.width;
@@ -370,6 +369,9 @@ const Index = () => {
     },
     [initializeCanvas]
   );
+
+  // 나머지 코드는 동일...
+  // [기존 useEffect들과 함수들 그대로 유지]
 
   // 기존 문서 로드
   useEffect(() => {

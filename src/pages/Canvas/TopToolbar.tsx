@@ -102,7 +102,7 @@ const TopToolbar: FC<TopToolbarProps> = ({
     reader.readAsDataURL(file);
   };
 
-  // 캔버스 컨텍스트 초기화 - 배경색 설정 포함
+  // 캔버스 컨텍스트 초기화 - 투명 배경으로 수정
   useEffect(() => {
     if (!canvasRef.current) return;
     const ctx = canvasRef.current.getContext("2d");
@@ -138,9 +138,9 @@ const TopToolbar: FC<TopToolbarProps> = ({
       ctx.lineCap = "round";
       ctx.lineJoin = "round";
 
-      // 중요: 흰색 배경 설정
-      ctx.fillStyle = "#ffffff";
-      ctx.fillRect(0, 0, width, height);
+      // 흰색 배경 제거 - 투명 배경 유지
+      // ctx.fillStyle = "#ffffff";
+      // ctx.fillRect(0, 0, width, height);
 
       ctxRef.current = ctx;
 

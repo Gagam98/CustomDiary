@@ -59,7 +59,7 @@ const Physics = forwardRef<HTMLCanvasElement, PhysicsProps>(
       }
     }, [ref]);
 
-    // 캔버스 크기 초기화 함수
+    // 캔버스 크기 초기화 함수 - 투명 배경 지원
     const initializeCanvasSize = () => {
       const canvas = canvasRef.current;
       if (!canvas) return { width: 0, height: 0 };
@@ -82,6 +82,9 @@ const Physics = forwardRef<HTMLCanvasElement, PhysicsProps>(
         ctx.scale(pixelRatio, pixelRatio);
         ctx.imageSmoothingEnabled = true;
         ctx.imageSmoothingQuality = "high";
+
+        // 투명 배경 유지 - clearRect만 사용하고 배경색 채우지 않음
+        ctx.clearRect(0, 0, width, height);
       }
 
       canvasDimensionsRef.current = { width, height };
@@ -395,18 +398,20 @@ const Physics = forwardRef<HTMLCanvasElement, PhysicsProps>(
       });
 
       let animationFrameId: number;
-      // Physics.tsx의 렌더링 부분 개선 (render 함수 내부)
+
+      // 개선된 렌더링 함수 - 투명 배경 지원
       const render = () => {
         const { width, height } = canvasDimensionsRef.current;
         if (width > 0 && height > 0) {
+          // 투명 배경 유지 - clearRect 사용 (배경색 없음)
           ctx.clearRect(0, 0, width, height);
 
-          // 사진 렌더링 - 타입 안전성 및 에러 처리 강화
+          // 사진 렌더링 - 에러 처리 개선 및 투명 배경 지원
           photos.forEach((photo) => {
             const body = bodiesRef.current[`photo-${photo.id}`];
             if (!body) return;
 
-            // 이미지 유효성 검사 추가
+            // 이미지 유효성 검사
             if (!photo.image || !(photo.image instanceof HTMLImageElement)) {
               console.warn(`Invalid image for photo ${photo.id}`);
               return;
@@ -414,13 +419,13 @@ const Physics = forwardRef<HTMLCanvasElement, PhysicsProps>(
 
             // 이미지 로딩 상태 확인
             if (!photo.image.complete || photo.image.naturalWidth === 0) {
-              // 이미지가 아직 로딩 중이면 로딩 표시
+              // 이미지가 아직 로딩 중이면 반투명 로딩 표시
               ctx.save();
               ctx.translate(body.position.x, body.position.y);
               ctx.rotate(body.angle);
 
-              // 로딩 중 표시 (회색 박스)
-              ctx.fillStyle = "#f0f0f0";
+              // 반투명 로딩 박스 (투명 배경에 어울리게)
+              ctx.fillStyle = "rgba(240, 240, 240, 0.8)";
               ctx.fillRect(
                 -photo.width / 2,
                 -photo.height / 2,
@@ -428,8 +433,18 @@ const Physics = forwardRef<HTMLCanvasElement, PhysicsProps>(
                 photo.height
               );
 
+              // 테두리 추가
+              ctx.strokeStyle = "rgba(200, 200, 200, 0.8)";
+              ctx.lineWidth = 1;
+              ctx.strokeRect(
+                -photo.width / 2,
+                -photo.height / 2,
+                photo.width,
+                photo.height
+              );
+
               // 로딩 텍스트
-              ctx.fillStyle = "#666";
+              ctx.fillStyle = "rgba(102, 102, 102, 0.8)";
               ctx.font = "12px sans-serif";
               ctx.textAlign = "center";
               ctx.fillText("로딩중...", 0, 0);
@@ -443,7 +458,12 @@ const Physics = forwardRef<HTMLCanvasElement, PhysicsProps>(
               ctx.translate(body.position.x, body.position.y);
               ctx.rotate(body.angle);
 
-              // drawImage 호출 전 한 번 더 확인
+              // 사진에 약간의 그림자 효과 추가 (투명 배경에서 구분되도록)
+              ctx.shadowColor = "rgba(0, 0, 0, 0.1)";
+              ctx.shadowBlur = 3;
+              ctx.shadowOffsetX = 1;
+              ctx.shadowOffsetY = 1;
+
               ctx.drawImage(
                 photo.image,
                 -photo.width / 2,
@@ -451,25 +471,26 @@ const Physics = forwardRef<HTMLCanvasElement, PhysicsProps>(
                 photo.width,
                 photo.height
               );
+
               ctx.restore();
             } catch (error) {
               console.error(`Failed to draw photo ${photo.id}:`, error);
-              ctx.restore(); // 에러 발생 시에도 컨텍스트 복원
+              ctx.restore();
 
-              // 에러 발생 시 에러 표시
+              // 에러 발생 시 반투명 에러 표시
               ctx.save();
               ctx.translate(body.position.x, body.position.y);
               ctx.rotate(body.angle);
 
-              // 에러 표시 (빨간 박스)
-              ctx.fillStyle = "#ffebee";
+              // 반투명 에러 박스
+              ctx.fillStyle = "rgba(255, 235, 238, 0.9)";
               ctx.fillRect(
                 -photo.width / 2,
                 -photo.height / 2,
                 photo.width,
                 photo.height
               );
-              ctx.strokeStyle = "#f44336";
+              ctx.strokeStyle = "rgba(244, 67, 54, 0.8)";
               ctx.lineWidth = 2;
               ctx.strokeRect(
                 -photo.width / 2,
@@ -479,7 +500,7 @@ const Physics = forwardRef<HTMLCanvasElement, PhysicsProps>(
               );
 
               // 에러 텍스트
-              ctx.fillStyle = "#f44336";
+              ctx.fillStyle = "rgba(244, 67, 54, 0.8)";
               ctx.font = "12px sans-serif";
               ctx.textAlign = "center";
               ctx.fillText("오류", 0, 0);
@@ -488,7 +509,7 @@ const Physics = forwardRef<HTMLCanvasElement, PhysicsProps>(
             }
           });
 
-          // 스티커 렌더링은 기존과 동일하지만 에러 처리 추가
+          // 스티커 렌더링 - 투명 배경 지원
           stickers.forEach((sticker) => {
             const body = bodiesRef.current[`sticker-${sticker.id}`];
             if (!body) return;
@@ -502,7 +523,19 @@ const Physics = forwardRef<HTMLCanvasElement, PhysicsProps>(
               if (sticker.shape.startsWith("sticker")) {
                 const cachedImage = stickerImageCache.get(sticker.shape);
                 if (cachedImage && cachedImage.complete) {
+                  // 스티커에 약간의 그림자 효과 (투명 배경에서 구분되도록)
+                  ctx.shadowColor = "rgba(0, 0, 0, 0.1)";
+                  ctx.shadowBlur = 2;
+                  ctx.shadowOffsetX = 1;
+                  ctx.shadowOffsetY = 1;
+
                   ctx.drawImage(cachedImage, -s / 2, -s / 2, s, s);
+
+                  // 그림자 리셋
+                  ctx.shadowColor = "transparent";
+                  ctx.shadowBlur = 0;
+                  ctx.shadowOffsetX = 0;
+                  ctx.shadowOffsetY = 0;
                 } else {
                   // 스티커 이미지가 로드되지 않았을 때 기본 도형으로 표시
                   ctx.fillStyle = sticker.color;
@@ -512,23 +545,43 @@ const Physics = forwardRef<HTMLCanvasElement, PhysicsProps>(
                 const img = stickerImageCache.get(sticker.shape);
                 if (img && img.complete) {
                   const height = s * 1.2;
+
+                  // 고양이 스티커에도 그림자 효과
+                  ctx.shadowColor = "rgba(0, 0, 0, 0.1)";
+                  ctx.shadowBlur = 2;
+                  ctx.shadowOffsetX = 1;
+                  ctx.shadowOffsetY = 1;
+
                   ctx.drawImage(img, -s / 2, -height / 2, s, height);
+
+                  // 그림자 리셋
+                  ctx.shadowColor = "transparent";
+                  ctx.shadowBlur = 0;
+                  ctx.shadowOffsetX = 0;
+                  ctx.shadowOffsetY = 0;
                 } else {
                   // 고양이 스티커 이미지가 로드되지 않았을 때
                   ctx.fillStyle = sticker.color;
                   ctx.fillRect(-s / 2, -s / 2, s, s);
                 }
               } else {
-                // 기본 도형 스티커들
+                // 기본 도형 스티커들 - 약간의 테두리 추가 (투명 배경에서 구분되도록)
                 ctx.fillStyle = sticker.color;
+
+                // 약간의 테두리 효과
+                ctx.strokeStyle = "rgba(0, 0, 0, 0.1)";
+                ctx.lineWidth = 1;
+
                 switch (sticker.shape) {
                   case "circle":
                     ctx.beginPath();
                     ctx.arc(0, 0, s / 2, 0, 2 * Math.PI);
                     ctx.fill();
+                    ctx.stroke();
                     break;
                   case "square":
                     ctx.fillRect(-s / 2, -s / 2, s, s);
+                    ctx.strokeRect(-s / 2, -s / 2, s, s);
                     break;
                   case "triangle":
                     ctx.beginPath();
@@ -537,6 +590,7 @@ const Physics = forwardRef<HTMLCanvasElement, PhysicsProps>(
                     ctx.lineTo(-s / 2, s / 2);
                     ctx.closePath();
                     ctx.fill();
+                    ctx.stroke();
                     break;
                   case "heart":
                     ctx.beginPath();
@@ -545,22 +599,25 @@ const Physics = forwardRef<HTMLCanvasElement, PhysicsProps>(
                     ctx.bezierCurveTo(-s / 2, s / 4, -s / 2, -s / 2, 0, -s / 4);
                     ctx.closePath();
                     ctx.fill();
+                    ctx.stroke();
                     break;
                   case "star":
                     renderStar(ctx, 0, 0, 5, s / 2, s / 4);
+                    ctx.stroke();
                     break;
                   default:
                     // 알 수 없는 스티커는 원으로 표시
                     ctx.beginPath();
                     ctx.arc(0, 0, s / 4, 0, 2 * Math.PI);
                     ctx.fill();
+                    ctx.stroke();
                     break;
                 }
               }
               ctx.restore();
             } catch (error) {
               console.error(`Failed to draw sticker ${sticker.id}:`, error);
-              ctx.restore(); // 에러 발생 시에도 컨텍스트 복원
+              ctx.restore();
             }
           });
         }
@@ -572,6 +629,7 @@ const Physics = forwardRef<HTMLCanvasElement, PhysicsProps>(
       return () => cancelAnimationFrame(animationFrameId);
     }, [photos, stickers]);
 
+    // 그리드 캔버스 - 투명 배경을 위해 더 연한 그리드
     useEffect(() => {
       if (!gridCanvasRef.current) return;
       const canvas = gridCanvasRef.current;
@@ -589,7 +647,9 @@ const Physics = forwardRef<HTMLCanvasElement, PhysicsProps>(
       canvas.style.height = `${height}px`;
 
       ctx.scale(dpr, dpr);
-      ctx.strokeStyle = "#e5e5e5";
+
+      // 투명 배경에 맞춰 더 연한 그리드 색상
+      ctx.strokeStyle = "rgba(229, 229, 229, 0.3)";
       ctx.lineWidth = 1;
 
       const gridSize = 20;
