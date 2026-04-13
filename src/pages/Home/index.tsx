@@ -150,22 +150,30 @@ export default function Home() {
 
   if (loading) {
     return (
-      <div className="flex h-screen bg-gray-50 items-center justify-center">
-        <div className="text-gray-500">문서를 불러오는 중...</div>
+      <div className="flex h-screen bg-slate-50 items-center justify-center">
+        <div className="flex flex-col items-center space-y-4">
+          <div className="w-8 h-8 rounded-full border-4 border-indigo-200 border-t-indigo-600 animate-spin"></div>
+          <div className="text-slate-500 font-medium">문서를 불러오는 중...</div>
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="flex h-screen bg-gray-50 items-center justify-center">
-        <div className="text-red-500">{error}</div>
+      <div className="flex h-screen bg-slate-50 items-center justify-center">
+        <div className="bg-red-50 text-red-600 px-6 py-4 rounded-2xl shadow-sm border border-red-100 font-medium">{error}</div>
       </div>
     );
   }
 
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className="flex h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 relative overflow-hidden">
+      {/* 장식용 배경 요소 */}
+      <div className="absolute top-0 -left-4 w-96 h-96 bg-purple-300 rounded-full mix-blend-multiply filter blur-3xl opacity-40 animate-blob pointer-events-none z-0"></div>
+      <div className="absolute top-0 -right-4 w-96 h-96 bg-yellow-300 rounded-full mix-blend-multiply filter blur-3xl opacity-40 animate-blob animation-delay-2000 pointer-events-none z-0"></div>
+      <div className="absolute -bottom-8 left-40 w-96 h-96 bg-pink-300 rounded-full mix-blend-multiply filter blur-3xl opacity-40 animate-blob animation-delay-4000 pointer-events-none z-0"></div>
+
       <Sidebar
         onNavigate={(section) =>
           navigate(section === "documents" ? "/" : `/${section}`)
@@ -179,16 +187,16 @@ export default function Home() {
         }
       />
 
-      <main className="flex-1 flex flex-col overflow-hidden">
-        <div className="flex justify-between items-center px-6 py-3 border-b border-gray-200">
-          <h1 className="text-lg font-medium">
+      <main className="flex-1 flex flex-col overflow-hidden bg-white/60 backdrop-blur-2xl m-2 ml-0 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/50 relative z-10">
+        <div className="flex justify-between items-center px-8 py-5 border-b border-white/40 bg-white/40 backdrop-blur-md z-10 relative">
+          <h1 className="text-2xl font-bold tracking-tight text-slate-800">
             {location.pathname === "/shared"
               ? "공유됨"
               : location.pathname === "/favorites"
               ? "즐겨찾기"
               : "문서"}
           </h1>
-          <div className="flex items-center space-x-1">
+          <div className="flex items-center space-x-2">
             {location.pathname === "/" && (
               <div className="bg-gray-100 rounded-md flex mr-2 relative p-0.5 gap-0 w-[94px]">
                 <div
@@ -230,14 +238,14 @@ export default function Home() {
                 <Search className="absolute left-2 top-2 h-4 w-4 text-gray-400" />
               </div>
             )}
-            <button className="p-1.5 rounded-full hover:bg-gray-100">
-              <MoreVertical size={18} className="text-gray-500" />
+            <button className="p-2 rounded-xl hover:bg-slate-100 transition-colors text-slate-500 hover:text-indigo-600">
+              <MoreVertical size={20} />
             </button>
-            <button className="p-1.5 rounded-full hover:bg-gray-100">
-              <Bell size={18} className="text-gray-500" />
+            <button className="p-2 rounded-xl hover:bg-slate-100 transition-colors text-slate-500 hover:text-indigo-600">
+              <Bell size={20} />
             </button>
-            <button className="p-1.5 rounded-full hover:bg-gray-100">
-              <Settings size={18} className="text-gray-500" />
+            <button className="p-2 rounded-xl hover:bg-slate-100 transition-colors text-slate-500 hover:text-indigo-600">
+              <Settings size={20} />
             </button>
           </div>
         </div>

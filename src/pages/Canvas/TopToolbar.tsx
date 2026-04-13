@@ -195,28 +195,28 @@ const TopToolbar: FC<TopToolbarProps> = ({
 
   return (
     <>
-      <div className="w-full h-12 bg-gray-700 flex items-center px-4 justify-between">
+      <div className="w-full h-12 bg-white/80 backdrop-blur-md border-b border-slate-200/60 flex items-center px-4 justify-between relative z-20">
         <div className="flex items-center">
           <button
-            className="text-white p-2 hover:bg-gray-600 rounded"
+            className="text-slate-600 p-2 hover:bg-slate-100 hover:text-indigo-600 rounded transition-colors"
             onClick={onBackToHome}
           >
             <ChevronLeft size={20} />
           </button>
         </div>
 
-        <div className="text-white font-medium flex items-center">
-          <span className="mr-4">{title}</span>
+        <div className="text-slate-800 font-bold flex items-center">
+          <span className="mr-4 tracking-tight">{title}</span>
 
           {/* 저장 상태 표시 */}
           <div className="flex items-center text-sm">
             {isSaving ? (
-              <span className="text-yellow-300 flex items-center">
+              <span className="text-indigo-500 flex items-center bg-indigo-50 px-2 py-0.5 rounded-full">
                 <Save size={16} className="mr-1 animate-pulse" />
                 저장 중...
               </span>
             ) : lastSaved ? (
-              <span className="text-green-300 flex items-center">
+              <span className="text-emerald-600 flex items-center bg-emerald-50 px-2 py-0.5 rounded-full">
                 <Clock size={16} className="mr-1" />
                 {formatLastSaved(lastSaved)}
               </span>
@@ -227,7 +227,7 @@ const TopToolbar: FC<TopToolbarProps> = ({
         <div className="flex items-center">
           {/* 수동 저장 버튼 */}
           <button
-            className={`text-white p-2 mr-2 rounded hover:bg-gray-600 ${
+            className={`text-slate-600 p-2 mr-2 rounded hover:bg-slate-100 hover:text-indigo-600 transition-colors ${
               isSaving ? "opacity-50 cursor-not-allowed" : ""
             }`}
             onClick={handleSave}
@@ -236,24 +236,24 @@ const TopToolbar: FC<TopToolbarProps> = ({
             <Save size={20} />
           </button>
 
-          <button className="text-white p-2 hover:bg-gray-600 rounded">
+          <button className="text-slate-600 p-2 hover:bg-slate-100 hover:text-amber-500 rounded transition-colors">
             <Bookmark size={20} />
           </button>
-          <button className="text-white p-2 ml-2 hover:bg-gray-600 rounded">
+          <button className="text-slate-600 p-2 ml-2 hover:bg-slate-100 hover:text-indigo-600 rounded transition-colors">
             <Settings size={20} />
           </button>
         </div>
       </div>
 
-      <div className="w-full bg-white border-b border-gray-200 p-2">
+      <div className="w-full bg-white/95 backdrop-blur-sm border-b border-slate-100 p-2 shadow-sm relative z-20">
         <div className="flex items-center w-full relative">
-          <div className="w-1/2 flex items-center justify-end pr-4">
+          <div className="w-1/2 flex items-center justify-end pr-4 border-r border-slate-200/50">
             <div className="flex items-center space-x-2">
               <button
                 className={`p-2 rounded transition-colors ${
                   activeTool === "pen"
-                    ? "bg-blue-100 text-blue-600"
-                    : "hover:bg-gray-100"
+                    ? "bg-indigo-50 text-indigo-600 shadow-sm border border-slate-200/50"
+                    : "text-slate-500 hover:bg-slate-50 hover:text-indigo-600"
                 }`}
                 onClick={() => setActiveTool("pen")}
               >
@@ -262,8 +262,8 @@ const TopToolbar: FC<TopToolbarProps> = ({
               <button
                 className={`p-2 rounded transition-colors ${
                   activeTool === "eraser"
-                    ? "bg-blue-100 text-blue-600"
-                    : "hover:bg-gray-100"
+                    ? "bg-indigo-50 text-indigo-600 shadow-sm border border-slate-200/50"
+                    : "text-slate-500 hover:bg-slate-50 hover:text-indigo-600"
                 }`}
                 onClick={() => setActiveTool("eraser")}
               >
@@ -273,8 +273,8 @@ const TopToolbar: FC<TopToolbarProps> = ({
                 ref={stickerButtonRef}
                 className={`p-2 rounded transition-colors ${
                   activeTool === "sticker"
-                    ? "bg-blue-100 text-blue-600"
-                    : "hover:bg-gray-100"
+                    ? "bg-indigo-50 text-indigo-600 shadow-sm border border-slate-200/50"
+                    : "text-slate-500 hover:bg-slate-50 hover:text-indigo-600"
                 }`}
                 onClick={() => {
                   setActiveTool("sticker");
@@ -286,8 +286,8 @@ const TopToolbar: FC<TopToolbarProps> = ({
               <button
                 className={`p-2 rounded transition-colors ${
                   activeTool === "image"
-                    ? "bg-blue-100 text-blue-600"
-                    : "hover:bg-gray-100"
+                    ? "bg-indigo-50 text-indigo-600 shadow-sm border border-slate-200/50"
+                    : "text-slate-500 hover:bg-slate-50 hover:text-indigo-600"
                 }`}
                 onClick={() => {
                   setActiveTool("image");
@@ -299,8 +299,8 @@ const TopToolbar: FC<TopToolbarProps> = ({
               <button
                 className={`p-2 rounded transition-colors ${
                   activeTool === "text"
-                    ? "bg-blue-100 text-blue-600"
-                    : "hover:bg-gray-100"
+                    ? "bg-indigo-50 text-indigo-600 shadow-sm border border-slate-200/50"
+                    : "text-slate-500 hover:bg-slate-50 hover:text-indigo-600"
                 }`}
                 onClick={() => setActiveTool("text")}
               >
@@ -316,17 +316,17 @@ const TopToolbar: FC<TopToolbarProps> = ({
                   {colorOptions.map((color) => (
                     <button
                       key={color}
-                      className={`w-6 h-6 rounded-full transition-all ${
+                      className={`w-6 h-6 rounded-full transition-all shadow-sm ${
                         activeColor === color
-                          ? "ring-2 ring-gray-700 scale-110"
-                          : "hover:scale-105"
-                      } ${color === "#FFFFFF" ? "border border-gray-300" : ""}`}
+                          ? "ring-2 ring-indigo-500 ring-offset-1 scale-110"
+                          : "hover:scale-110"
+                      } ${color === "#FFFFFF" ? "border border-slate-300" : ""}`}
                       style={{ backgroundColor: color }}
                       onClick={() => setActiveColor(color)}
                     />
                   ))}
-                  <div className="flex items-center space-x-2">
-                    <span className="text-sm text-gray-600">굵기:</span>
+                  <div className="flex items-center space-x-2 ml-4">
+                    <span className="text-sm font-medium text-slate-600">굵기:</span>
                     <input
                       type="range"
                       min={1}
@@ -335,9 +335,9 @@ const TopToolbar: FC<TopToolbarProps> = ({
                       onChange={(e: ChangeEvent<HTMLInputElement>) =>
                         setLineWidth(parseInt(e.target.value))
                       }
-                      className="w-20"
+                      className="w-20 accent-indigo-500"
                     />
-                    <span className="text-sm text-gray-600 w-6">
+                    <span className="text-sm font-bold text-indigo-600 w-6">
                       {lineWidth}
                     </span>
                   </div>
@@ -345,8 +345,8 @@ const TopToolbar: FC<TopToolbarProps> = ({
               )}
 
               {activeTool === "eraser" && (
-                <div className="flex items-center space-x-2">
-                  <span className="text-sm text-gray-600">크기:</span>
+                <div className="flex items-center space-x-2 ml-2">
+                  <span className="text-sm font-medium text-slate-600">크기:</span>
                   <input
                     type="range"
                     min={5}
@@ -355,9 +355,9 @@ const TopToolbar: FC<TopToolbarProps> = ({
                     onChange={(e: ChangeEvent<HTMLInputElement>) =>
                       setEraserSize(parseInt(e.target.value))
                     }
-                    className="w-20"
+                    className="w-20 accent-indigo-500"
                   />
-                  <span className="text-sm text-gray-600 w-8">
+                  <span className="text-sm font-bold text-indigo-600 w-8">
                     {eraserSize}
                   </span>
                 </div>

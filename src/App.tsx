@@ -34,7 +34,6 @@ export default function App() {
           }
         />
 
-        {/* 🆕 새로운 협업 그림판 라우트들 */}
         <Route
           path="/rooms"
           element={
@@ -52,7 +51,6 @@ export default function App() {
           }
         />
 
-        {/* 와일드카드 라우트 (404 처리 또는 기본 페이지) */}
         <Route
           path="*"
           element={

@@ -597,18 +597,26 @@ const Index = () => {
 
   if (isLoading) {
     return (
-      <div className="w-full h-screen flex items-center justify-center">
-        <div className="text-lg">문서를 불러오는 중...</div>
+      <div className="w-full h-screen flex bg-slate-50 items-center justify-center">
+        <div className="flex flex-col items-center space-y-4">
+          <div className="w-8 h-8 rounded-full border-4 border-indigo-200 border-t-indigo-600 animate-spin"></div>
+          <div className="text-slate-500 font-medium">문서를 불러오는 중...</div>
+        </div>
       </div>
     );
   }
 
   return (
     <div
-      className={`w-full h-screen flex flex-col ${
+      className={`w-full h-screen flex flex-col bg-gradient-to-br from-indigo-50 via-white to-purple-50 relative overflow-hidden ${
         isGlueModeActive ? "cursor-grab" : ""
       }`}
     >
+      {/* 장식용 배경 요소 */}
+      <div className="absolute top-0 -left-4 w-96 h-96 bg-purple-300 rounded-full mix-blend-multiply filter blur-3xl opacity-40 animate-blob pointer-events-none z-0"></div>
+      <div className="absolute top-0 -right-4 w-96 h-96 bg-yellow-300 rounded-full mix-blend-multiply filter blur-3xl opacity-40 animate-blob animation-delay-2000 pointer-events-none z-0"></div>
+      <div className="absolute -bottom-8 left-40 w-96 h-96 bg-pink-300 rounded-full mix-blend-multiply filter blur-3xl opacity-40 animate-blob animation-delay-4000 pointer-events-none z-0"></div>
+
       {saveError && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-2 text-sm">
           {saveError}
@@ -633,15 +641,15 @@ const Index = () => {
         onBackToHome={handleBackToHome}
       />
 
-      <div className="flex flex-1 min-h-0">
-        <div className="w-16 bg-white border-r">
+      <div className="flex flex-1 min-h-0 bg-transparent p-2 pt-0 relative z-10">
+        <div className="w-16 bg-white/60 backdrop-blur-xl border border-white/50 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] mr-2 overflow-hidden flex flex-col">
           <Sidebar
             activeSideTool={activeSideTool}
             setActiveSideTool={setActiveSideTool}
           />
         </div>
 
-        <div className="flex-1 relative bg-white">
+        <div className="flex-1 relative bg-white/80 backdrop-blur-md border border-white/50 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] overflow-hidden">
           <CanvasContent
             handleUndo={() => console.log("Undo 실행")}
             onSave={saveDrawing}

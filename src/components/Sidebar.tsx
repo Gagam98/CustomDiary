@@ -104,27 +104,27 @@ const Sidebar: React.FC<SidebarProps> = ({ onNavigate, activeSection }) => {
   };
 
   return (
-    <aside className="w-64 bg-gray-100 border-r border-gray-200 flex flex-col relative">
+    <aside className="w-72 bg-white/40 backdrop-blur-xl border-r border-white/50 flex flex-col relative shadow-[2px_0_8px_-4px_rgba(0,0,0,0.05)] z-20">
       {/* 유저 정보 섹션 */}
       {userInfo && (
-        <div className="px-4 py-4 bg-gray-100 relative">
+        <div className="px-4 py-6 relative">
           <button
             onClick={handleUserClick}
-            className="w-full flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-200 transition-colors"
+            className="w-full flex items-center space-x-3 p-3 rounded-2xl hover:bg-white/60 hover:shadow-sm transition-all duration-300 border border-transparent hover:border-gray-200/40 group focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
           >
-            <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center">
-              <User size={20} className="text-indigo-600" />
+            <div className="w-11 h-11 bg-gradient-to-tr from-indigo-500 to-purple-500 rounded-xl flex items-center justify-center shadow-md shadow-indigo-500/20 group-hover:scale-105 group-active:scale-95 transition-transform duration-300">
+              <User size={20} className="text-white" />
             </div>
             <div className="flex-1 min-w-0 text-left">
-              <p className="text-sm font-medium text-gray-900 truncate">
+              <p className="text-sm font-bold text-slate-800 truncate tracking-tight">
                 {userInfo.name || getDisplayName(userInfo.email)}
               </p>
-              <p className="text-xs text-gray-500 truncate">{userInfo.email}</p>
+              <p className="text-xs text-slate-500 truncate font-medium mt-0.5">{userInfo.email}</p>
             </div>
             <ChevronUp
-              size={16}
-              className={`text-gray-400 transition-transform ${
-                showUserSheet ? "rotate-180" : ""
+              size={18}
+              className={`text-slate-400 transition-transform duration-300 ease-spring ${
+                showUserSheet ? "rotate-180 text-indigo-500" : ""
               }`}
             />
           </button>
@@ -133,57 +133,56 @@ const Sidebar: React.FC<SidebarProps> = ({ onNavigate, activeSection }) => {
           {showUserSheet && (
             <div
               ref={sheetRef}
-              className="absolute top-full left-4 right-4 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 py-2"
+              className="absolute top-[85%] left-4 right-4 mt-2 bg-white/95 backdrop-blur-xl border border-gray-200/60 rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.08)] z-50 py-2 transform origin-top animate-out overflow-hidden"
             >
-              <div className="px-4 py-2 border-b border-gray-100">
-                <p className="text-sm font-medium text-gray-900">
+              <div className="px-5 py-4 border-b border-gray-100/80 bg-slate-50/50">
+                <p className="text-sm font-bold text-gray-900 tracking-tight">
                   {userInfo.name || getDisplayName(userInfo.email)}
                 </p>
-                <p className="text-xs text-gray-500">{userInfo.email}</p>
+                <p className="text-xs text-gray-500 mt-1">{userInfo.email}</p>
               </div>
 
-              <div className="py-1">
+              <div className="py-2 px-2 space-y-1">
                 <button
                   onClick={handleSettings}
-                  className="w-full flex items-center space-x-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                  className="w-full flex items-center space-x-3 px-4 py-2.5 rounded-xl text-sm font-medium text-slate-600 hover:text-indigo-600 hover:bg-indigo-50/80 transition-all duration-200 outline-none"
                 >
-                  <Settings size={16} />
+                  <Settings size={18} />
                   <span>설정</span>
                 </button>
 
                 <button
                   onClick={handleNotifications}
-                  className="w-full flex items-center space-x-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                  className="w-full flex items-center space-x-3 px-4 py-2.5 rounded-xl text-sm font-medium text-slate-600 hover:text-indigo-600 hover:bg-indigo-50/80 transition-all duration-200 outline-none"
                 >
-                  <Bell size={16} />
+                  <Bell size={18} />
                   <span>알림 설정</span>
                 </button>
 
                 <button
                   onClick={handlePrivacy}
-                  className="w-full flex items-center space-x-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                  className="w-full flex items-center space-x-3 px-4 py-2.5 rounded-xl text-sm font-medium text-slate-600 hover:text-indigo-600 hover:bg-indigo-50/80 transition-all duration-200 outline-none"
                 >
-                  <Shield size={16} />
+                  <Shield size={18} />
                   <span>개인정보 보호</span>
                 </button>
 
                 <button
                   onClick={handleHelp}
-                  className="w-full flex items-center space-x-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                  className="w-full flex items-center space-x-3 px-4 py-2.5 rounded-xl text-sm font-medium text-slate-600 hover:text-indigo-600 hover:bg-indigo-50/80 transition-all duration-200 outline-none"
                 >
-                  <HelpCircle size={16} />
+                  <HelpCircle size={18} />
                   <span>도움말</span>
                 </button>
 
-                <div className="border-t border-gray-100 mt-1 pt-1">
+                <div className="mx-4 my-2 border-t border-gray-100/80"></div>
                   <button
                     onClick={handleLogout}
-                    className="w-full flex items-center space-x-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                    className="w-full flex items-center space-x-3 px-4 py-2.5 rounded-xl text-sm font-medium text-red-500 hover:text-red-700 hover:bg-red-50/80 transition-all duration-200 outline-none"
                   >
-                    <LogOut size={16} />
+                    <LogOut size={18} />
                     <span>로그아웃</span>
                   </button>
-                </div>
               </div>
             </div>
           )}
@@ -191,36 +190,55 @@ const Sidebar: React.FC<SidebarProps> = ({ onNavigate, activeSection }) => {
       )}
 
       {/* 구분선 */}
-      {userInfo && <div className="border-t border-gray-300 mx-4"></div>}
+      {userInfo && (
+        <div className="px-6 w-full">
+          <div className="w-full border-t border-gray-200/70 shadow-[0_1px_2px_rgba(0,0,0,0.01)]"></div>
+        </div>
+      )}
 
       {/* 네비게이션 메뉴 */}
-      <nav className="flex-1 space-y-1 px-2 pt-4">
+      <nav className="flex-1 space-y-2.5 px-5 pt-8">
         <button
-          className={`w-full flex items-center text-left space-x-3 px-3 py-2.5 rounded font-medium text-gray-700 ${
-            activeSection === "documents" ? "bg-gray-200" : "hover:bg-gray-200"
+          className={`w-full flex items-center text-left space-x-3 px-4 py-3.5 rounded-2xl transition-all duration-300 group relative overflow-hidden outline-none ${
+            activeSection === "documents" 
+              ? "bg-white shadow-[0_2px_10px_rgba(0,0,0,0.02)] border border-gray-200/60 text-indigo-600" 
+              : "text-slate-600 hover:bg-white/50 hover:text-slate-900 border border-transparent"
           }`}
           onClick={() => onNavigate?.("documents")}
         >
-          <Grid size={18} />
-          <span className="text-sm">문서</span>
+          {activeSection === "documents" && (
+            <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-8 bg-indigo-500 rounded-r-full"></div>
+          )}
+          <Grid size={22} className={`transition-colors duration-300 ${activeSection === "documents" ? "text-indigo-600" : "text-slate-400 group-hover:text-slate-500"}`} />
+          <span className="text-[15px] font-semibold tracking-tight">내 문서</span>
         </button>
         <button
-          className={`w-full flex items-center text-left space-x-3 px-3 py-2.5 rounded text-gray-700 ${
-            activeSection === "shared" ? "bg-gray-200" : "hover:bg-gray-200"
+          className={`w-full flex items-center text-left space-x-3 px-4 py-3.5 rounded-2xl transition-all duration-300 group relative overflow-hidden outline-none ${
+            activeSection === "shared" 
+              ? "bg-white shadow-[0_2px_10px_rgba(0,0,0,0.02)] border border-gray-200/60 text-indigo-600" 
+              : "text-slate-600 hover:bg-white/50 hover:text-slate-900 border border-transparent"
           }`}
           onClick={() => onNavigate?.("shared")}
         >
-          <Users size={18} />
-          <span className="text-sm">공유됨</span>
+          {activeSection === "shared" && (
+            <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-8 bg-indigo-500 rounded-r-full"></div>
+          )}
+          <Users size={22} className={`transition-colors duration-300 ${activeSection === "shared" ? "text-indigo-600" : "text-slate-400 group-hover:text-slate-500"}`} />
+          <span className="text-[15px] font-semibold tracking-tight">공유됨</span>
         </button>
         <button
-          className={`w-full flex items-center text-left space-x-3 px-3 py-2.5 rounded text-gray-700 ${
-            activeSection === "favorites" ? "bg-gray-200" : "hover:bg-gray-200"
+          className={`w-full flex items-center text-left space-x-3 px-4 py-3.5 rounded-2xl transition-all duration-300 group relative overflow-hidden outline-none ${
+            activeSection === "favorites" 
+              ? "bg-white shadow-[0_2px_10px_rgba(0,0,0,0.02)] border border-gray-200/60 text-indigo-600" 
+              : "text-slate-600 hover:bg-white/50 hover:text-slate-900 border border-transparent"
           }`}
           onClick={() => onNavigate?.("favorites")}
         >
-          <Star size={18} />
-          <span className="text-sm">즐겨찾기</span>
+          {activeSection === "favorites" && (
+            <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-8 bg-amber-400 rounded-r-full"></div>
+          )}
+          <Star size={22} className={`transition-all duration-300 ${activeSection === "favorites" ? "text-amber-500 drop-shadow-sm" : "text-slate-400 group-hover:text-amber-400"}`} />
+          <span className="text-[15px] font-semibold tracking-tight">즐겨찾기</span>
         </button>
       </nav>
     </aside>
